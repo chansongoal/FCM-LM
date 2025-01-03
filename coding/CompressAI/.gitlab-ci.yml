@@ -1,0 +1,116 @@
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - "$CI_PROJECT_DIR/.cache/pip"
+
+stages:
+  - build
+  - static-analysis
+  - test
+  - doc
+
+wheel:
+  cache: []
+  image: python:$PYTHON_VERSION-buster
+  stage: build
+  before_script:
+    - python -m pip install build
+  script:
+    - python -m build --wheel .
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 day
+  parallel:
+    matrix:
+      - PYTHON_VERSION: ['3.8', '3.9', '3.10']
+  tags:
+    - docker
+
+sdist:
+  cache: []
+  image: python:3.10-buster
+  stage: build
+  before_script:
+    - python -m pip install build
+  script:
+    - python -m build --sdist .
+  tags:
+    - docker
+
+flake8:
+  cache: []
+  stage: static-analysis
+  image: pytorch/pytorch:2.2.0-cuda11.8-cudnn8-devel
+  before_script:
+    - python --version
+    - python -m pip install flake8 flake8-bugbear flake8-comprehensions
+  script:
+    - flake8 compressai tests examples docs
+  tags:
+    - docker
+
+black:
+  cache: []
+  stage: static-analysis
+  image: python:3.10-buster
+  before_script:
+    - python --version
+    - python -m pip install black
+  script:
+    - make check-black
+  tags:
+    - docker
+
+isort:
+  cache: []
+  stage: static-analysis
+  image: python:3.10-buster
+  before_script:
+    - python --version
+    - python -m pip install .
+    - python -m pip install isort
+  script:
+    - make check-isort
+  tags:
+    - docker
+
+test:
+  cache: []
+  stage: test
+  image: pytorch/pytorch:$PYTORCH_IMAGE
+  before_script:
+    - python --version
+    - python -m pip install -U pip
+    - python -m pip install -e .
+    - python -m pip install pytest pytest-cov plotly
+  script:
+    - >
+      if [ "$CI_COMMIT_BRANCH" == "master" ]; then
+        pytest --cov=compressai -s tests
+      else
+        pytest --cov=compressai -m "not pretrained" -s tests
+      fi
+  parallel:
+    matrix:
+      - PYTORCH_IMAGE:
+          - "1.8.1-cuda11.1-cudnn8-devel"
+          - "2.2.0-cuda11.8-cudnn8-devel"
+  tags:
+    - docker
+
+doc:
+  cache: []
+  stage: doc
+  image: pytorch/pytorch:2.2.0-cuda11.8-cudnn8-devel
+  before_script:
+    - python --version
+    - python -m pip install -e .
+    - cd docs
+    - python -m pip install -r requirements.txt
+  script:
+    - make html
+  tags:
+    - docker
