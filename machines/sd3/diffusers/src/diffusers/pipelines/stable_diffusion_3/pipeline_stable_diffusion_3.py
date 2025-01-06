@@ -1140,7 +1140,7 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
         return StableDiffusion3PipelineOutput(images=image)
 
     # Define a new function to generate image from latents, to save inference time
-    def generate_image_from_latents(self, latents, output_type="pt"):
+    def generate_image_from_latents(self, latents, output_type="pil"):
         """
         Generate an image from precomputed latents using VAE decode and postprocess steps.
 

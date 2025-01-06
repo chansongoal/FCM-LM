@@ -1,0 +1,9 @@
+
+FROM pytorch/pytorch:2.1.1-cuda12.1-cudnn8-runtime
+
+# install essential for compressai
+RUN apt-get update && \
+	apt-get install -y build-essential 
+
+# install python packages, for llama3
+RUN pip install datasets accelerate matplotlib

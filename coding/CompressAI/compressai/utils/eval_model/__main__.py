@@ -179,7 +179,7 @@ def load_pretrained(model: str, metric: str, quality: int) -> nn.Module:
 
 def load_checkpoint(arch: str, no_update: bool, checkpoint_path: str) -> nn.Module:
     # update model if need be
-    checkpoint = torch.load(checkpoint_path, map_location="cpu")
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
     state_dict = checkpoint
     # compatibility with 'not updated yet' trained nets
     for key in ["network", "state_dict", "model_state_dict"]:

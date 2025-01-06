@@ -32,8 +32,8 @@ def get_captions(source_captions_name):
     return captions, image_names
 
 def extract_features_parallel(sd3_pipeline, source_captions, image_names, org_feature_path, org_image_path):
-    # source_captions = source_captions[:1]
-    batch_size = 16; num_batch = math.ceil(len(source_captions)/batch_size)
+    # source_captions = source_captions[:16]
+    batch_size = 16; num_batch = math.ceil(len(source_captions)/batch_size) # please keep the batch size as 16 to extract identical test features. different batch size or total number source_captions results in different features
     for bs_idx in range(num_batch):
         start = bs_idx * batch_size
         end = (bs_idx+1) * batch_size if (bs_idx+1) * batch_size < len(source_captions) else len(source_captions)
@@ -125,7 +125,7 @@ def feat_to_image_parallel(sd3_pipeline, clip_score_fn, source_captions, image_n
 
 def feat_to_image(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path):
     start_time = time.time()
-    # image_names = image_names[:1]
+    # image_names = image_names[:16]
     for idx, image_name in enumerate(image_names): 
         rec_feat_name = os.path.join(rec_feature_path, image_name[:-4]+'.npy')
         rec_img_name = os.path.join(rec_image_path, image_name[:-4]+'.png')
@@ -199,14 +199,14 @@ def tti_pipeline(source_captions_name, org_feature_path, org_image_path, rec_fea
     sd3_pipeline = StableDiffusion3Pipeline.from_pretrained(sd3_checkpoint_path, torch_dtype=torch.float16)
     sd3_pipeline.enable_model_cpu_offload()
 
-    # # Extract features
-    # os.makedirs(org_feature_path, exist_ok=True)
-    # os.makedirs(org_image_path, exist_ok=True)
-    # extract_features_parallel(sd3_pipeline, source_captions, image_names, org_feature_path, org_image_path)
+    # Extract features
+    os.makedirs(org_feature_path, exist_ok=True)
+    os.makedirs(org_image_path, exist_ok=True)
+    extract_features_parallel(sd3_pipeline, source_captions, image_names, org_feature_path, org_image_path)
 
     # Generate images and evaluate 
     os.makedirs(rec_image_path, exist_ok=True)
-    # feat_to_image(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
+    feat_to_image(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
     
     # tti_evaluate_fid(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, org_image_path, rec_image_path)
 
@@ -232,7 +232,7 @@ def vtm_baseline_evaluation():
 
     max_v = 4.668; min_v = -6.176; trun_high = 4.668; trun_low = -6.176
 
-    trun_flag = False; samples = 10; bit_depth = 10; quant_type = 'uniform'
+    trun_flag = False; samples = 0; bit_depth = 10; quant_type = 'uniform'
     if trun_flag == False: trun_high = max_v; trun_low = min_v
 
     QPs = [22, 27, 32, 37, 42]
@@ -273,7 +273,7 @@ def hyperprior_baseline_evaluation():
     trun_flag = False; samples = 0; bit_depth = 1; quant_type = 'uniform'
     if trun_flag == False: trun_high = max_v; trun_low = min_v
 
-    lambdas = [10]
+    lambdas = [0.2]
     epochs = 60; learning_rate = "1e-4"; batch_size = 32; patch_size = "512 512"
     for lambda_v in lambdas:
         print(trun_flag, quant_type, samples, max_v, min_v, trun_high, trun_low, bit_depth, lambda_v)
@@ -284,7 +284,7 @@ def hyperprior_baseline_evaluation():
 
         # Generate images 
         os.makedirs(rec_image_path, exist_ok=True)
-        feat_to_image(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
+        # feat_to_image(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
         
         # Evaluation
         tti_evaluate_fid(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, org_image_path, rec_image_path)
@@ -297,10 +297,11 @@ if __name__ == "__main__":
     hyperprior_baseline_evaluation()
 
 
+# To extract feature, run the tti_pipeline below
 # if __name__ == "__main__":
 #     source_captions_name = "/home/gaocs/projects/FCM-LM/Data/sd3/tti/source/captions_val2017_select100.txt"
-#     org_feature_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/feature_test_all'
-#     org_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/rec_image'
+#     org_feature_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/feature_test'
+#     org_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/image_test'
 #     rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/feature_test'
 #     rec_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/image_test'
 #     vae_checkpoint_path = "/home/gaocs/projects/FCM-LM/Data/sd3/tti/pretrained_head/clip-vit-base-patch16"

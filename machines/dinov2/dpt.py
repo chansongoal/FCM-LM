@@ -108,8 +108,8 @@ def evaluate_depth(model: torch.nn.Module, data_loader: torch.utils.data.DataLoa
             file_path = data['img_metas'][0].data[0][0]['filename'].split('/')
             file_name = f"{file_path[-2]}_{file_path[-1].split('.')[0]}"
             rec_feature_numpy = np.load(f'{rec_feature_path}/{file_name}.npy')
-            #/////////////////////////////////
-            rec_feature_numpy = rec_feature_numpy + 0.1*np.random.rand(*rec_feature_numpy.shape).astype(np.float32)
+            #gcs, modify the features
+            # rec_feature_numpy = rec_feature_numpy + 0.1*np.random.rand(*rec_feature_numpy.shape).astype(np.float32)
             rec_feature_tensor = torch.from_numpy(rec_feature_numpy).to(device)
             
             # Convert features to the required format for the model           
@@ -139,7 +139,7 @@ def evaluate_depth(model: torch.nn.Module, data_loader: torch.utils.data.DataLoa
 
     return results / len(data_loader), mse_eval / len(data_loader)
 
-def main(config_path: str, backbone_checkpoint_path: str, head_checkpoint_path: str, source_img_path: str, source_split_name: str, org_feature_path: str, rec_feature_path: str):
+def dpt_pipeline(config_path: str, backbone_checkpoint_path: str, head_checkpoint_path: str, source_img_path: str, source_split_name: str, org_feature_path: str, rec_feature_path: str):
     """Main function to run the depth estimation pipeline."""
     # Load configuration
     cfg = mmcv.Config.fromfile(config_path)
@@ -173,8 +173,16 @@ def main(config_path: str, backbone_checkpoint_path: str, head_checkpoint_path: 
     # print(f"Feature MSE: {feat_mse:.8f}")
 
 
-def main_eval_only(config_path: str, backbone_checkpoint_path: str, head_checkpoint_path: str, source_img_path: str, source_split_name: str, org_feature_path: str, rec_feature_path: str):
-    """Main function to run the depth estimation pipeline."""
+def vtm_baseline_evaluation():
+    # Set up paths
+    config_path = 'cfg/dinov2_vitg14_nyu_linear4_config.py'
+    backbone_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/pretrained_head/dinov2_vitg14_pretrain.pth'
+    head_checkpoint_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/pretrained_head/dinov2_vitg14_nyu_linear4_head.pth"
+    source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/source/NYU_Test16'
+    source_split_name = 'nyu_test.txt'  # put it at the same folder as the source_img_path
+    org_feature_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/feature_test"
+    vtm_root_path = f'/home/gaocs/projects/FCM-LM/Data/dinov2/cls/vtm_baseline'; print('vtm_root_path: ', vtm_root_path)
+
     # Load configuration
     cfg = mmcv.Config.fromfile(config_path)
     if cfg.get('cudnn_benchmark', False):
@@ -197,29 +205,35 @@ def main_eval_only(config_path: str, backbone_checkpoint_path: str, head_checkpo
     )
 
     # Evaluate and print results
-    trun_high = [3.2777, 5.0291, 25.0456, 102.0307]; trun_low = [-2.4246, -26.8908, -323.2952, -504.4310]
-    samples = 10; bit_depth = 8
-    quant_type_all = ['uniform']
-    QPs = [0]
-    for quant_type in quant_type_all:
-        print(trun_low, trun_high, samples, bit_depth, quant_type, QPs)
-        for QP in QPs:
-            rec_feature_path = f'/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/vtm/postprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}'
-            rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/feature_test'
-            results, feat_mse = evaluate_depth(model, data_loader, org_feature_path, rec_feature_path, backbone_model)
-    
-            # # print("a1, a2, a3, abs_rel, rmse, log_10, rmse_log, silog, sq_rel")
-            print(f"\nRMSE: {results[0][4]:.8f}")
-            print(f"Feature MSE: {feat_mse:.8f}")
+    max_v = [3.2777, 5.0291, 25.0456, 102.0307]; min_v = [-2.4246, -26.8908, -323.2952, -504.4310]
+    trun_high = [1, 2, 10, 20]; trun_low = [-1, -2, -10, -20]
+
+    trun_flag = True; samples = 0; bit_depth = 10; quant_type = 'uniform'
+    if trun_flag == False: trun_high = max_v; trun_low = min_v
+
+    QPs = [22]
+    for QP in QPs:
+        print(trun_low, trun_high, samples, bit_depth, quant_type, QP)
+        rec_feature_path = f"{vtm_root_path}/postprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}"
+        rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/feature_test'
+        results, feat_mse = evaluate_depth(model, data_loader, org_feature_path, rec_feature_path, backbone_model)
+
+        # # print("a1, a2, a3, abs_rel, rmse, log_10, rmse_log, silog, sq_rel")
+        print(f"\nRMSE: {results[0][4]:.8f}")
+        print(f"Feature MSE: {feat_mse:.8f}")
+
 
 if __name__ == "__main__":
-    config_path = "cfg/dinov2_vitg14_nyu_linear4_config.py"
-    backbone_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/pretrained_head/dinov2_vitg14_pretrain.pth'
-    head_checkpoint_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/pretrained_head/dinov2_vitg14_nyu_linear4_head.pth"
-    source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/source/NYU_Test16'
-    source_split_name = 'nyu_test.txt'
-    org_feature_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/feature_test"
-    rec_feature_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/feature_test_copy"
+    vtm_baseline_evaluation()
+
+
+# if __name__ == "__main__":
+#     config_path = 'cfg/dinov2_vitg14_nyu_linear4_config.py'
+#     backbone_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/pretrained_head/dinov2_vitg14_pretrain.pth'
+#     head_checkpoint_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/pretrained_head/dinov2_vitg14_nyu_linear4_head.pth"
+#     source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/source/NYU_Test16'
+#     source_split_name = 'nyu_test.txt'
+#     org_feature_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/feature_test"
+#     rec_feature_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/feature_test_copy"
     
-    # main(config_path, backbone_checkpoint_path, head_checkpoint_path, source_img_path, source_split_name, org_feature_path, rec_feature_path)
-    main_eval_only(config_path, backbone_checkpoint_path, head_checkpoint_path, source_img_path, source_split_name, org_feature_path, rec_feature_path)
+#     dpt_pipeline(config_path, backbone_checkpoint_path, head_checkpoint_path, source_img_path, source_split_name, org_feature_path, rec_feature_path)

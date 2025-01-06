@@ -474,7 +474,7 @@ def seg_evaluate(model: torch.nn.Module, source_img_path: str, org_feature_path:
     return all_iou, all_miou, mse_list
 
 
-def main(config_path: str, backbone_checkpoint_path: str, head_checkpoint_path: str, source_img_path: str, source_split_name: str, org_feature_path: str, rec_feature_path: str):
+def seg_pipeline(config_path: str, backbone_checkpoint_path: str, head_checkpoint_path: str, source_img_path: str, source_split_name: str, org_feature_path: str, rec_feature_path: str):
     """Main function to run the depth estimation pipeline."""
     # Load configuration
     cfg = mmcv.Config.fromfile(config_path)
@@ -492,16 +492,25 @@ def main(config_path: str, backbone_checkpoint_path: str, head_checkpoint_path: 
     os.makedirs(org_feature_path, exist_ok=True)
     extract_features(model, source_img_path, org_feature_path, image_list)
     
-    # Evaluate and print results
-    all_iou, all_miou, mse_list = seg_evaluate(model, source_img_path, org_feature_path, rec_feature_path, image_list, backbone_model)
+    # # Evaluate and print results
+    # all_iou, all_miou, mse_list = seg_evaluate(model, source_img_path, org_feature_path, rec_feature_path, image_list, backbone_model)
     
-    print(f"IoU: ", end=" ")
-    for iou in all_iou: print(f"{iou*100:.4f}", end=" ") 
-    print(f"\nmIoU: {all_miou*100:.4f}")
-    print(f"Feature MSE: {np.mean(mse_list):.8f}")
+    # print(f"IoU: ", end=" ")
+    # for iou in all_iou: print(f"{iou*100:.4f}", end=" ") 
+    # print(f"\nmIoU: {all_miou*100:.4f}")
+    # print(f"Feature MSE: {np.mean(mse_list):.8f}")
 
-def main_eval_only(config_path: str, backbone_checkpoint_path: str, head_checkpoint_path: str, source_img_path: str, source_split_name: str, org_feature_path: str, rec_feature_path: str):
-    """Main function to run the depth estimation pipeline."""
+def vtm_baseline_evaluation():
+    # Set up paths
+    config_path = 'cfg/dinov2_vitg14_voc2012_linear_config.py'
+    backbone_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/pretrained_head/dinov2_vitg14_pretrain.pth'
+    head_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/pretrained_head/dinov2_vitg14_voc2012_linear_head.pth'
+    
+    source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/source/VOC2012'
+    source_split_name = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/source/val_20.txt'
+    org_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/feature_test'
+    vtm_root_path = f'/home/gaocs/projects/FCM-LM/Data/dinov2/cls/vtm_baseline'; print('vtm_root_path: ', vtm_root_path)
+    
     # Load configuration
     cfg = mmcv.Config.fromfile(config_path)
     
@@ -515,34 +524,34 @@ def main_eval_only(config_path: str, backbone_checkpoint_path: str, head_checkpo
     model = build_segmentation_model(cfg, backbone_model, head_checkpoint_path)
     
     # Evaluate and print results
-    max_v = 103.2168; min_v = -530.9767
-    samples = 10; bit_depth = 10; trun_low = -530.9767; trun_high = 103.2168
-    quant_type_all = ['uniform']
-    QPs = [0]
-    for quant_type in quant_type_all:
-        print(trun_low, trun_high, samples, bit_depth, quant_type, QPs)
-        for QP in QPs:
-            # rec_feature_path = f'/home/gaocs/projects/FCM-LM/Data/dinov2/seg/vtm/postprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}'
-            # rec_feature_path = f'/home/gaocs/projects/FCM-LM/Data/dinov2/seg/eae/postprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}'
-            rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/feature_test'
-            print(rec_feature_path)
+    max_v = 103.2168; min_v = -530.9767; trun_high = 20; trun_low = -20
 
-            all_iou, all_miou, mse_list = seg_evaluate(model, source_img_path, org_feature_path, rec_feature_path, image_list, backbone_model)
-            # print(f"IoU: ", end=" ")
-            # for iou in all_iou: print(f"{iou*100:.4f}", end=" ") 
-            print(f"\nmIoU: {all_miou*100:.4f}")
-            print(f"Feature MSE: {np.mean(mse_list):.8f}")
+    trun_flag = True; samples = 0; bit_depth = 10; quant_type = 'uniform'
+    if trun_flag == False: trun_high = max_v; trun_low = min_v
+
+    QPs = [22]
+    for QP in QPs:
+        print(trun_low, trun_high, samples, bit_depth, quant_type, QP)
+        rec_feature_path = f"{vtm_root_path}/postprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}"
+        # rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/feature_test'
+
+        all_iou, all_miou, mse_list = seg_evaluate(model, source_img_path, org_feature_path, rec_feature_path, image_list, backbone_model)
+        # print(f"IoU: ", end=" ")
+        # for iou in all_iou: print(f"{iou*100:.4f}", end=" ") 
+        print(f"\nmIoU: {all_miou*100:.4f}")
+        print(f"Feature MSE: {np.mean(mse_list):.8f}")
 
 if __name__ == "__main__":
-    config_path = f"cfg/dinov2_vitg14_voc2012_linear_config.py"
-    backbone_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/pretrained_head/dinov2_vitg14_pretrain.pth'
-    head_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/pretrained_head/dinov2_vitg14_voc2012_linear_head.pth'
+    vtm_baseline_evaluation()
+
+# if __name__ == "__main__":
+#     config_path = f"cfg/dinov2_vitg14_voc2012_linear_config.py"
+#     backbone_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/pretrained_head/dinov2_vitg14_pretrain.pth'
+#     head_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/pretrained_head/dinov2_vitg14_voc2012_linear_head.pth'
     
-    # source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/source/VOC2012'
-    source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/source/VOC2012'
-    source_split_name = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/source/val_20.txt'
-    org_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/feature_test'
-    rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/feature_test'
-    
-    # main(config_path, backbone_checkpoint_path, head_checkpoint_path, source_img_path, source_split_name, org_feature_path, rec_feature_path)
-    main_eval_only(config_path, backbone_checkpoint_path, head_checkpoint_path, source_img_path, source_split_name, org_feature_path, rec_feature_path)
+#     source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/source/VOC2012'
+#     source_split_name = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/source/val_20.txt'
+#     org_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/feature_test'
+#     rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/feature_test'
+
+#     seg_pipeline(config_path, backbone_checkpoint_path, head_checkpoint_path, source_img_path, source_split_name, org_feature_path, rec_feature_path)

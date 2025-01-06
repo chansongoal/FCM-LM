@@ -36,6 +36,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from torch.cuda import amp
+#gcs
+# import torch.amp as amp
 
 from compressai.entropy_models import EntropyBottleneck, GaussianConditional
 from compressai.layers import QReLU
@@ -351,6 +353,8 @@ class ScaleSpaceFlow(CompressionModel):
         return torch.cat(volume, dim=2)
 
     @amp.autocast(enabled=False)
+    #gcs 
+    # @amp.autocast('cuda', enabled=False)
     def warp_volume(self, volume, flow, scale_field, padding_mode: str = "border"):
         """3D volume warping."""
         if volume.ndimension() != 5:

@@ -886,18 +886,19 @@ class LlamaModel(LlamaPreTrainedModel):
                     cache_position=cache_position,
                 )
                 
-            # save or load features here
+            #gcs, save or load features here
             if layer_idx == 32:
-                temp_id_file = "/home/gaocs/projects/FCM-LM/Data/llama3/csr/source/temp_id.txt"
-                with open(temp_id_file, 'r') as file:
-                    id = file.read().strip(); print('layer_idx, id:', layer_idx, id)
-                # save original features to disk
+                # temp_id_file = "/home/gaocs/projects/FCM-LM/Data/llama3/csr/source/temp_id.txt"
+                # with open(temp_id_file, 'r') as file:
+                #     id = file.read().strip(); print('layer_idx, id:', layer_idx, id)
+                # # save original features to disk
                 # hidden_states = layer_outputs[0]    # assign original layer_output[0] to hidden_states
                 # feature = layer_outputs[0]
                 # feature = feature.unsqueeze(0)
                 # feature_np = feature.detach().to(torch.float).cpu().numpy()
-                # save_path = '/home/gaocs/projects/FCM-LM/Data/llama3/csr/feature_train'
-                # feat_name_org = os.path.join(save_path,'arc_'+id+'.npy')
+                # save_path = '/home/gaocs/projects/FCM-LM/Data/llama3/csr/feature_test_new'
+                # feat_name_org = os.path.join(save_path, id+'.npy')
+                # # feat_name_org = os.path.join(save_path,'arc_'+id+'.npy')
                 # np.save(feat_name_org, feature_np)
 
                 # only truncation
@@ -912,17 +913,12 @@ class LlamaModel(LlamaPreTrainedModel):
                 # hidden_states = dequant_feat
 
                 # # load reconstructed features from disk
-                # rec_path = '/home/gaocs/projects/FCM-LM/Data/llama3/csr/feature/rec_feat/10bit/qp0'   # for features without vtm encoding
-                # rec_path = '/home/gaocs/projects/FCM-LM/Data/llama3/csr/vtm/postprocessed/trunl-78_trunh47.75_uniform10_bitdepth8/QP0'   # for features without vtm encoding
-                # rec_path = '/home/gaocs/projects/FCM-LM/Data/llama3/csr/feature/rec_feat/hyperprior/lambda1_epoch200_lr1e-4_bs40_patch4096-64_trun10'
-                # rec_path = '/home/gaocs/projects/FCM-LM/Data/llama3/csr/feature/rec_feat/cheng2020/lambda1_epoch200_lr1e-4_bs24_patch4096-64'
-                rec_path = '/home/gaocs/projects/FCM-LM/Data/llama3/csr/eae/postprocessed/trunl-78_trunh47.75_uniform10_bitdepth10/QP47'
+                rec_path = '/home/gaocs/projects/FCM-LM/Data/llama3/csr/feature_test'
+                # rec_path = '/home/gaocs/projects/FCM-LM/Data/llama3/csr/vtm_baseline/postprocessed/trunl-78_trunh47.75_uniform0_bitdepth10/QP42'
                 feature_name_rec = os.path.join(rec_path,id+'.npy')
+                # print(feature_name_rec)
                 feature_rec = np.load(feature_name_rec)
-                # print(feature_rec.shape)
                 feature_rec = np.squeeze(feature_rec, axis=0)
-                # print(feature_rec.shape, feature_rec.dtype)
-                # print(np.max(feature_rec))
                 feature_rec = torch.from_numpy(feature_rec).to(torch.bfloat16)
                 hidden_states = feature_rec.to(hidden_states.device)  # assign reconstructed features to hidden_states       
             else:

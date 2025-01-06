@@ -1,0 +1,21 @@
+# FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime    # work for sd3, but extract different features from diffusers/diffusers-pytorch-cuda:latest. feature to image is the same as diffusers/diffusers-pytorch-cuda:latest
+# FROM pytorch/pytorch:2.4.0-cuda12.1-cudnn9-runtime    # work for sd3, but extract different features from diffusers/diffusers-pytorch-cuda:latest. feature to image is the same as diffusers/diffusers-pytorch-cuda:latest
+# FROM pytorch/pytorch:2.1.1-cuda12.1-cudnn8-runtime    # sd3 requires torch2.4 or torch2.5, compressai requires torch2.1
+# use diffusers/diffusers-pytorch-cuda:latest as the base docker image to obtain identical test features. You are free to use other base images to extract train features
+FROM diffusers/diffusers-pytorch-cuda:latest
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# For SD3
+RUN pip install --no-cache-dir \
+        torchmetrics sentencepiece protobuf torch-fidelity datasets accelerate transformers==4.43.3 
+
+RUN pip install --no-cache-dir scipy matplotlib 
+
+# RUN apt-get update && \
+#     echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | debconf-set-selections && \
+#     apt-get install -y fontconfig ttf-mscorefonts-installer && \
+#     fc-cache -fv && \
+#     rm -rf /var/lib/apt/lists/*
+
+CMD ["/bin/bash"]

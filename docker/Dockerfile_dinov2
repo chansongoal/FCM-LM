@@ -1,0 +1,33 @@
+# Start from the existing image
+FROM pytorch/pytorch:2.0.0-cuda11.7-cudnn8-runtime
+
+# Set the working directory
+WORKDIR /workspace
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update package lists and install dependencies
+RUN apt-get update && \
+    apt-get install -y \
+        libgl1-mesa-glx \
+        python3-pip \
+        python3-dev \
+        # fontconfig \
+        # ttf-mscorefonts-installer \
+        build-essential && \
+    # echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | debconf-set-selections && \
+    # fc-cache -fv && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install xformer==0.0.23 and mmcv-full
+RUN pip install --no-cache-dir \
+    xformers==0.0.18 \
+    torchmetrics \
+    mmcv-full==1.5.0 \
+    mmengine \
+    mmsegmentation==0.27.0 \
+    scikit-learn
+
+
+# Set the default command (you can adjust this as needed)
+CMD ["bash"]

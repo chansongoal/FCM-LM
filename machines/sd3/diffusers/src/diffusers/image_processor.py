@@ -207,6 +207,7 @@ class VaeImageProcessor(ConfigMixin):
         """
         # gcs, add detach
         images = images.cpu().detach().permute(0, 2, 3, 1).float().numpy()
+        # images = images.cpu().permute(0, 2, 3, 1).float().numpy()
         return images
 
     @staticmethod

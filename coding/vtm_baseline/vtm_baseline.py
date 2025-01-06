@@ -189,7 +189,7 @@ def vtm_pipeline(org_feat_path, vtm_root_path, model_type, trun_flag, samples, m
     encoding_log_path = f"{vtm_root_path}/encoding_log/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}"; os.makedirs(encoding_log_path, exist_ok=True)
     decoding_log_path = f"{vtm_root_path}/decoding_log/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}"; os.makedirs(decoding_log_path, exist_ok=True)
 
-    feat_names = os.listdir(bitstream_path)
+    feat_names = os.listdir(org_feat_path)
     # feat_names = feat_names[:1]
     for idx, feat_name in enumerate(feat_names):
         # Set related names
@@ -217,13 +217,13 @@ def vtm_pipeline(org_feat_path, vtm_root_path, model_type, trun_flag, samples, m
 
         # Packing
         pack_feat = packing(quant_feat, model_type)
-        # with open(preprocessed_yuv_name, 'wb') as f:
-        #     pack_feat.tofile(f)
+        with open(preprocessed_yuv_name, 'wb') as f:
+            pack_feat.tofile(f)
 
-        # # VTM encoding
-        # start = time.time()
-        # vtm_encoding(preprocessed_yuv_name, bitstream_name, encoding_log_name, pack_feat.shape[1], pack_feat.shape[0], QP, bit_depth)
-        # encoding_time = time.time() - start; print(encoding_time)
+        # VTM encoding
+        start = time.time()
+        vtm_encoding(preprocessed_yuv_name, bitstream_name, encoding_log_name, pack_feat.shape[1], pack_feat.shape[0], QP, bit_depth)
+        encoding_time = time.time() - start; print(encoding_time)
 
         # VTM decoding
         vtm_decoding(bitstream_name, decoded_yuv_name, decoding_log_name)
@@ -299,28 +299,29 @@ def vtm_decode_only(org_feat_path, vtm_root_path, model_type, trun_flag, samples
         # print(np.mean((org_feat-dequant_feat)**2), np.mean((trun_feat-dequant_feat)**2), np.mean((quant_feat-unpack_feat)**2))
 
 if __name__ == "__main__":
-    # model_type = 'llama3'; task = 'csr'
-    # max_v = 47.75; min_v = -78; trun_high = 30; trun_low = -30
+    model_type = 'llama3'; task = 'csr'
+    max_v = 47.75; min_v = -78; trun_high = 5; trun_low = -5
 
     # model_type = 'dinov2'; task = 'cls'
-    # max_v = 104.1752; min_v = -552.451; trun_high = 2; trun_low = -2
+    # max_v = 104.1752; min_v = -552.451; trun_high = 20; trun_low = -20
 
     # model_type = 'dinov2'; task = 'seg'
-    # max_v = 103.2168; min_v = -530.9767; trun_high = 50; trun_low = -50
+    # max_v = 103.2168; min_v = -530.9767; trun_high = 20; trun_low = -20
 
     # model_type = 'dinov2'; task = 'dpt'
     # max_v = [3.2777, 5.0291, 25.0456, 102.0307]; min_v = [-2.4246, -26.8908, -323.2952, -504.4310]; trun_high = [1, 2, 10, 20]; trun_low = [-1, -2, -10, -20]
     
-    model_type = 'sd3'; task = 'tti'
-    max_v = 4.668; min_v = -6.176; trun_high = 4.668; trun_low = -6.176
+    # model_type = 'sd3'; task = 'tti'
+    # max_v = 4.668; min_v = -6.176; trun_high = 4.668; trun_low = -6.176
 
-    trun_flag = False; samples = 10; bit_depth = 10; quant_type = 'uniform'
+    trun_flag = True; samples = 0; bit_depth = 10; quant_type = 'uniform'
     if trun_flag == False: trun_high = max_v; trun_low = min_v
 
-    QPs = [22]
+    QPs = [42]
     for QP in QPs:
-        org_feat_path = f'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/feature_test_all'; print('org_feat_path: ', org_feat_path)
+        org_feat_path = f'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/feature_test'; print('org_feat_path: ', org_feat_path)
         vtm_root_path = f'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/vtm_baseline'; print('vtm_root_path: ', vtm_root_path)
     
         print(model_type, task, trun_flag, quant_type, samples, max_v, min_v, trun_high, trun_low, bit_depth, QP)
-        vtm_decode_only(org_feat_path, vtm_root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth, QP)
+        vtm_pipeline(org_feat_path, vtm_root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth, QP)
+        # vtm_decode_only(org_feat_path, vtm_root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth, QP)
