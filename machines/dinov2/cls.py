@@ -153,7 +153,7 @@ def cls_pipeline(backbone_checkpoint_path: str, head_checkpoint_path: str, sourc
 
 def vtm_baseline_evaluation():
     # Set up paths
-    backbone_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/pretrained_head/dinov2_vitg14_pretrain.pth'
+    backbone_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_pretrain.pth'
     head_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/pretrained_head/dinov2_vitg14_linear_head.pth'
     source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/source/ImageNet_Selected100'
     source_label_name = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/source/imagenet_selected_label100.txt'
@@ -179,16 +179,48 @@ def vtm_baseline_evaluation():
         print(f"Classification Accuracy: {acc:.4f}")
         # print(f"Feature MSE: {feat_mse:.8f}")
 
+def hyperprior_baseline_evaluation():
+    # Set up paths
+    backbone_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_pretrain.pth'
+    head_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/pretrained_head/dinov2_vitg14_linear_head.pth'
+    source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/source/ImageNet_Selected100'
+    source_label_name = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/source/imagenet_selected_label100.txt'
+    org_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/feature_test'
+    root_path = f'/home/gaocs/projects/FCM-LM/Data/dinov2/cls/hyperprior'; print('root_path: ', root_path)
 
-if __name__ == "__main__":
-    vtm_baseline_evaluation()
-    # hyperprior_baseline_evaluation()
+    # Initialize the model
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model = dinov2_vitg14_lc(layers=1, pretrained=True, weights=[backbone_checkpoint_path, head_checkpoint_path])
+    model.to(device)
+
+    # Evaluate and print results
+    max_v = 104.1752; min_v = -552.451; trun_high = 5; trun_low = -5
+    epochs = 800; learning_rate="1e-4"; batch_size = 128; patch_size = "256 256"
+    lambda_value_all = [0.001, 0.0017, 0.003, 0.0035, 0.01]
+
+    trun_flag = True
+    samples = 0; bit_depth = 1; quant_type = 'uniform'
+
+    if trun_flag == False: trun_high = max_v; trun_low = min_v
+
+    for lambda_value in lambda_value_all:
+        print(trun_low, trun_high, samples, bit_depth, quant_type, lambda_value)
+        rec_feature_path = f"{root_path}/decoded/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/lambda{lambda_value}_epoch{epochs}_lr{learning_rate}_bs{batch_size}_patch{patch_size.replace(' ', '-')}"
+        acc, feat_mse = evaluate_cls(model, org_feature_path, rec_feature_path, source_label_name)
+        print(f"Classification Accuracy: {acc:.4f}")
+        # print(f"Feature MSE: {feat_mse:.8f}")
+
 
 # if __name__ == "__main__":
-#     backbone_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/pretrained_head/dinov2_vitg14_pretrain.pth'
-#     head_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/pretrained_head/dinov2_vitg14_linear_head.pth'
-#     source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/source/ImageNet_Selected100'
-#     source_label_name = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/source/imagenet_selected_label100.txt'
-#     org_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/feature_test'
+#     # vtm_baseline_evaluation()
+#     hyperprior_baseline_evaluation()
 
-#     cls_pipeline(backbone_checkpoint_path, head_checkpoint_path, source_img_path, source_label_name, org_feature_path, rec_feature_path)
+if __name__ == "__main__":
+    backbone_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_pretrain.pth'
+    head_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/pretrained_head/dinov2_vitg14_linear_head.pth'
+    source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/source/ImageNet_Selected100'
+    source_label_name = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/source/imagenet_selected_label100.txt'
+    org_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/feature_test'
+    rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/hyperprior/postprocessed/trunl-5_trunh5_uniform0_bitdepth1'
+
+    cls_pipeline(backbone_checkpoint_path, head_checkpoint_path, source_img_path, source_label_name, org_feature_path, rec_feature_path)

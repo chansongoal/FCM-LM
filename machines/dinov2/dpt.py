@@ -163,25 +163,25 @@ def dpt_pipeline(config_path: str, backbone_checkpoint_path: str, head_checkpoin
     )
     
     # Extract features
-    extract_features(model, data_loader, org_feature_path)
+    # extract_features(model, data_loader, org_feature_path)
     
     # Evaluate and print results
-    # results, feat_mse = evaluate_depth(model, data_loader, org_feature_path, rec_feature_path, backbone_model)
+    results, feat_mse = evaluate_depth(model, data_loader, org_feature_path, rec_feature_path, backbone_model)
     
-    # # print("a1, a2, a3, abs_rel, rmse, log_10, rmse_log, silog, sq_rel")
-    # print(f"\nRMSE: {results[0][4]:.8f}")
-    # print(f"Feature MSE: {feat_mse:.8f}")
+    # print("a1, a2, a3, abs_rel, rmse, log_10, rmse_log, silog, sq_rel")
+    print(f"\nRMSE: {results[0][4]:.8f}")
+    print(f"Feature MSE: {feat_mse:.8f}")
 
 
 def vtm_baseline_evaluation():
     # Set up paths
     config_path = 'cfg/dinov2_vitg14_nyu_linear4_config.py'
-    backbone_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/pretrained_head/dinov2_vitg14_pretrain.pth'
+    backbone_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_pretrain.pth'
     head_checkpoint_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/pretrained_head/dinov2_vitg14_nyu_linear4_head.pth"
     source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/source/NYU_Test16'
     source_split_name = 'nyu_test.txt'  # put it at the same folder as the source_img_path
     org_feature_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/feature_test"
-    vtm_root_path = f'/home/gaocs/projects/FCM-LM/Data/dinov2/cls/vtm_baseline'; print('vtm_root_path: ', vtm_root_path)
+    vtm_root_path = f'/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/vtm_baseline'; print('vtm_root_path: ', vtm_root_path)
 
     # Load configuration
     cfg = mmcv.Config.fromfile(config_path)
@@ -208,32 +208,86 @@ def vtm_baseline_evaluation():
     max_v = [3.2777, 5.0291, 25.0456, 102.0307]; min_v = [-2.4246, -26.8908, -323.2952, -504.4310]
     trun_high = [1, 2, 10, 20]; trun_low = [-1, -2, -10, -20]
 
-    trun_flag = True; samples = 0; bit_depth = 10; quant_type = 'uniform'
+    trun_flag = True
+    samples = 0; bit_depth = 10; quant_type = 'uniform'
+
     if trun_flag == False: trun_high = max_v; trun_low = min_v
 
-    QPs = [22]
+    QPs = [42]
     for QP in QPs:
         print(trun_low, trun_high, samples, bit_depth, quant_type, QP)
         rec_feature_path = f"{vtm_root_path}/postprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}"
-        rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/feature_test'
         results, feat_mse = evaluate_depth(model, data_loader, org_feature_path, rec_feature_path, backbone_model)
 
         # # print("a1, a2, a3, abs_rel, rmse, log_10, rmse_log, silog, sq_rel")
         print(f"\nRMSE: {results[0][4]:.8f}")
         print(f"Feature MSE: {feat_mse:.8f}")
 
+def hyperprior_baseline_evaluation():
+    # Set up paths
+    config_path = 'cfg/dinov2_vitg14_nyu_linear4_config.py'
+    backbone_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_pretrain.pth'
+    head_checkpoint_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/pretrained_head/dinov2_vitg14_nyu_linear4_head.pth"
+    source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/source/NYU_Test16'
+    source_split_name = 'nyu_test.txt'  # put it at the same folder as the source_img_path
+    org_feature_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/feature_test"
+    root_path = f'/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/hyperprior'; print('root_path: ', root_path)
 
-if __name__ == "__main__":
-    vtm_baseline_evaluation()
+    # Load configuration
+    cfg = mmcv.Config.fromfile(config_path)
+    if cfg.get('cudnn_benchmark', False):
+        torch.backends.cudnn.benchmark = True
+    
+    # Setup models
+    backbone_model = setup_backbone(backbone_checkpoint_path)
+    model = create_depther_model(cfg, backbone_model, head_checkpoint_path, "giant")
 
+    # Setup data loader
+    cfg.data.test.data_root = source_img_path
+    cfg.data.test.split = source_split_name
+    dataset = build_dataset(cfg.data.test)
+    data_loader = build_dataloader(
+        dataset,
+        samples_per_gpu=1, 
+        workers_per_gpu=cfg.data.workers_per_gpu,
+        dist=False,
+        shuffle=False
+    )
+
+    # Evaluate and print results
+    max_v = [3.2777, 5.0291, 25.0456, 102.0307]; min_v = [-2.4246, -26.8908, -323.2952, -504.4310]; trun_high = [1,2,10,10]; trun_low = [-1,-2,-10,-10]
+    lambda_value_all = [0.001, 0.005, 0.02, 0.05, 0.12]
+    epochs = 200; learning_rate = "1e-4"; batch_size = 128; patch_size = "256 256"   # height first, width later
+
+    trun_flag = True
+    samples = 0; bit_depth = 1; quant_type = 'uniform'
+
+    if trun_flag == False: trun_high = max_v; trun_low = min_v
+
+    for lambda_value in lambda_value_all:
+        print(trun_low, trun_high, samples, bit_depth, quant_type, lambda_value)
+        if isinstance(trun_low, list):
+            trun_low = '[' + ','.join(map(str, trun_low)) + ']'
+            trun_high = '[' + ','.join(map(str, trun_high)) + ']'
+        rec_feature_path = f"{root_path}/decoded/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/lambda{lambda_value}_epoch{epochs}_lr{learning_rate}_bs{batch_size}_patch{patch_size.replace(' ', '-')}"
+        results, feat_mse = evaluate_depth(model, data_loader, org_feature_path, rec_feature_path, backbone_model)
+
+        # # print("a1, a2, a3, abs_rel, rmse, log_10, rmse_log, silog, sq_rel")
+        print(f"\nRMSE: {results[0][4]:.8f}")
+        print(f"Feature MSE: {feat_mse:.8f}")
 
 # if __name__ == "__main__":
-#     config_path = 'cfg/dinov2_vitg14_nyu_linear4_config.py'
-#     backbone_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/pretrained_head/dinov2_vitg14_pretrain.pth'
-#     head_checkpoint_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/pretrained_head/dinov2_vitg14_nyu_linear4_head.pth"
-#     source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/source/NYU_Test16'
-#     source_split_name = 'nyu_test.txt'
-#     org_feature_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/feature_test"
-#     rec_feature_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/feature_test_copy"
+#     vtm_baseline_evaluation()
+#     # hyperprior_baseline_evaluation()
+
+
+if __name__ == "__main__":
+    config_path = 'cfg/dinov2_vitg14_nyu_linear4_config.py'
+    backbone_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_pretrain.pth'
+    head_checkpoint_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/pretrained_head/dinov2_vitg14_nyu_linear4_head.pth"
+    source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/source/NYU_Test16'
+    source_split_name = 'nyu_test.txt'
+    org_feature_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/feature_test"
+    rec_feature_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/hyperprior/postprocessed/trunl[-1, -2, -10, -10]_trunh[1, 2, 10, 10]_uniform0_bitdepth1"
     
-#     dpt_pipeline(config_path, backbone_checkpoint_path, head_checkpoint_path, source_img_path, source_split_name, org_feature_path, rec_feature_path)
+    dpt_pipeline(config_path, backbone_checkpoint_path, head_checkpoint_path, source_img_path, source_split_name, org_feature_path, rec_feature_path)

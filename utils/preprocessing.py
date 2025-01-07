@@ -72,6 +72,18 @@ def uniform_dequantization(feat, min_v, max_v, bit_depth):
         dequant_feat = feat / scale + min_v
     return dequant_feat
 
+def uniform_scaling(feat, min_v, max_v, bit_depth):
+    quant_feat = np.zeros_like(feat).astype(np.float32)
+    if isinstance(min_v, list):
+        for idx in range(len(min_v)):
+            scale = ((2**bit_depth) -1) / (max_v[idx] - min_v[idx])
+            quant_feat[:,idx,:,:] = ((feat[:,idx,:,:]-min_v[idx]) * scale)
+    else:
+        scale = ((2**bit_depth) -1) / (max_v - min_v)
+        quant_feat = ((feat-min_v) * scale)
+
+    return quant_feat
+
 def nonlinear_quantization(data, quantization_points, bit_depth):
     """
     Apply quantization to data using a single or multiple sets of quantization points.
@@ -167,39 +179,19 @@ def unpacking(feat, shape, model_type):
     return feat
 
 
-def vtm_encoding(preprocessed_yuv_name, bitstream_name, compress_log_name, wdt, hgt, qp, bit_depth):
-    stdout_vtm = open(f"{compress_log_name}", 'w')
-    preprocessed_yuv_name = "\"" + preprocessed_yuv_name + "\""
-    bitstream_name = "\"" + bitstream_name + "\"" 
-    subp.run(f"./EncoderAppStatic -c ./encoder_intra_vtm.cfg -i {preprocessed_yuv_name} -o \"\" -b {bitstream_name} -q {qp} --ConformanceWindowMode=1 -wdt {wdt} -hgt {hgt} -f 1 -fr 1 --InternalBitDepth={bit_depth} --InputBitDepth={bit_depth} --InputChromaFormat=400 --OutputBitDepth={bit_depth}",
-            stdout=stdout_vtm, shell=True)
-
-def vtm_decoding(bitstream_name, decoded_yuv_name, decompress_log_name):
-    stdout_vtm = open(f"{decompress_log_name}", 'w')
-    bitstream_name = "\"" + bitstream_name + "\"" 
-    decoded_yuv_name = "\"" + decoded_yuv_name + "\"" 
-    subp.run(f"./DecoderAppStatic -b {bitstream_name} -o {decoded_yuv_name}", stdout=stdout_vtm, shell=True)
-
-def vtm_pipeline(org_feat_path, vtm_root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth, QP):
+def trun_quant_pipeline(org_feat_path, root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth):
     # Set related paths
-    preprocessed_yuv_path = f"{vtm_root_path}/preprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}"; os.makedirs(preprocessed_yuv_path, exist_ok=True)
-    bitstream_path = f"{vtm_root_path}/bitstream/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}"; os.makedirs(bitstream_path, exist_ok=True)
-    decoded_yuv_path = f"{vtm_root_path}/decoded/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}"; os.makedirs(decoded_yuv_path, exist_ok=True)
-    postprocessed_feat_path = f"{vtm_root_path}/postprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}"; os.makedirs(postprocessed_feat_path, exist_ok=True)
-    encoding_log_path = f"{vtm_root_path}/encoding_log/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}"; os.makedirs(encoding_log_path, exist_ok=True)
-    decoding_log_path = f"{vtm_root_path}/decoding_log/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}"; os.makedirs(decoding_log_path, exist_ok=True)
+    preprocessed_yuv_path = f"{root_path}/preprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}"; os.makedirs(preprocessed_yuv_path, exist_ok=True)
+    postprocessed_feat_path = f"{root_path}/postprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP0"; os.makedirs(postprocessed_feat_path, exist_ok=True)
 
     feat_names = os.listdir(org_feat_path)
     # feat_names = feat_names[:1]
+    mse_all = []
     for idx, feat_name in enumerate(feat_names):
         # Set related names
         org_feat_name = os.path.join(org_feat_path, f"{feat_name[:-4]}.npy"); #print(org_feat_name)
         preprocessed_yuv_name = os.path.join(preprocessed_yuv_path, f"{feat_name[:-4]}.yuv"); #print(preprocessed_yuv_name)
-        bitstream_name = os.path.join(bitstream_path, f"{feat_name[:-4]}.bin"); #print(bitstream_name)
-        decoded_yuv_name = os.path.join(decoded_yuv_path, f"{feat_name[:-4]}.yuv"); #print(decoded_yuv_name)
         postprocessed_feat_name = os.path.join(postprocessed_feat_path, f"{feat_name[:-4]}.npy"); #print(postprocessed_feat_name)
-        encoding_log_name = os.path.join(encoding_log_path, f"{feat_name[:-4]}.txt"); #print(encoding_log_name)
-        decoding_log_name = os.path.join(decoding_log_path, f"{feat_name[:-4]}.txt"); #print(decoding_log_name)
         
         # Load original feature
         org_feat = np.load(org_feat_name)
@@ -215,116 +207,89 @@ def vtm_pipeline(org_feat_path, vtm_root_path, model_type, trun_flag, samples, m
         # Quantization
         quant_feat = uniform_quantization(trun_feat, trun_low, trun_high, bit_depth)      
 
-        # Packing
-        pack_feat = packing(quant_feat, model_type)
-        with open(preprocessed_yuv_name, 'wb') as f:
-            pack_feat.tofile(f)
-
-        # VTM encoding
-        start = time.time()
-        vtm_encoding(preprocessed_yuv_name, bitstream_name, encoding_log_name, pack_feat.shape[1], pack_feat.shape[0], QP, bit_depth)
-        encoding_time = time.time() - start; print(encoding_time)
-
-        # VTM decoding
-        vtm_decoding(bitstream_name, decoded_yuv_name, decoding_log_name)
-
-        # Load decoded YUV
-        decoded_yuv = np.zeros_like(pack_feat)
-        with open(decoded_yuv_name, 'rb') as f:
-            decoded_yuv = np.fromfile(f, dtype=np.uint16 if bit_depth==10 else np.uint8) # save converted YUV file to dist 
-            decoded_yuv = decoded_yuv.reshape(pack_feat.shape) #(H,W)
-
-        # Postprocessing
-        unpack_feat = unpacking(decoded_yuv, [N,C,H,W], model_type)
-
         # Dequantization
-        dequant_feat = uniform_dequantization(unpack_feat, trun_low, trun_high, bit_depth)      
+        dequant_feat = uniform_dequantization(quant_feat, trun_low, trun_high, bit_depth)      
 
         # Save features
         if model_type == 'sd3': dequant_feat = dequant_feat.astype(np.float16)
         elif model_type == 'dinov2': dequant_feat = dequant_feat.astype(np.float32)
         elif model_type == 'llama3': dequant_feat = dequant_feat.astype(np.float32)
         np.save(postprocessed_feat_name, dequant_feat)
-        # print(np.mean((org_feat-dequant_feat)**2), np.mean((trun_feat-dequant_feat)**2), np.mean((quant_feat-unpack_feat)**2))
+        mse = np.mean((org_feat-dequant_feat)**2)
+        mse_all.append(mse)
+    print('Average MSE: ', np.mean(mse_all))
 
-def vtm_decode_only(org_feat_path, vtm_root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth, QP):
+def trun_scale_pipeline(org_feat_path, root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth):
     # Set related paths
-    preprocessed_yuv_path = f"{vtm_root_path}/preprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}"; os.makedirs(preprocessed_yuv_path, exist_ok=True)
-    bitstream_path = f"{vtm_root_path}/bitstream/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}"; os.makedirs(bitstream_path, exist_ok=True)
-    decoded_yuv_path = f"{vtm_root_path}/decoded/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}"; os.makedirs(decoded_yuv_path, exist_ok=True)
-    postprocessed_feat_path = f"{vtm_root_path}/postprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}"; os.makedirs(postprocessed_feat_path, exist_ok=True)
-    encoding_log_path = f"{vtm_root_path}/encoding_log/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}"; os.makedirs(encoding_log_path, exist_ok=True)
-    decoding_log_path = f"{vtm_root_path}/decoding_log/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}"; os.makedirs(decoding_log_path, exist_ok=True)
+    preprocessed_yuv_path = f"{root_path}/preprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}"; os.makedirs(preprocessed_yuv_path, exist_ok=True)
+    postprocessed_feat_path = f"{root_path}/postprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}"; os.makedirs(postprocessed_feat_path, exist_ok=True)
 
-    print(bitstream_path)
-    feat_names = os.listdir(bitstream_path)
+    feat_names = os.listdir(org_feat_path)
     # feat_names = feat_names[:1]
+    mse_all = []
     for idx, feat_name in enumerate(feat_names):
         # Set related names
         org_feat_name = os.path.join(org_feat_path, f"{feat_name[:-4]}.npy"); #print(org_feat_name)
         preprocessed_yuv_name = os.path.join(preprocessed_yuv_path, f"{feat_name[:-4]}.yuv"); #print(preprocessed_yuv_name)
-        bitstream_name = os.path.join(bitstream_path, f"{feat_name[:-4]}.vvc"); #print(bitstream_name)
-        decoded_yuv_name = os.path.join(decoded_yuv_path, f"{feat_name[:-4]}.yuv"); #print(decoded_yuv_name)
         postprocessed_feat_name = os.path.join(postprocessed_feat_path, f"{feat_name[:-4]}.npy"); #print(postprocessed_feat_name)
-        encoding_log_name = os.path.join(encoding_log_path, f"{feat_name[:-4]}.txt"); #print(encoding_log_name)
-        decoding_log_name = os.path.join(decoding_log_path, f"{feat_name[:-4]}.txt"); #print(decoding_log_name)
         
         # Load original feature
         org_feat = np.load(org_feat_name)
         N, C, H, W = org_feat.shape
-        # print(idx, feat_name, N,C,H,W) 
+        # print(idx, feat_name, N,C,H,W)
 
-        # Packing
-        pack_feat = packing(org_feat, model_type)
+        # Truncation
+        if trun_flag == True:
+            trun_feat = truncation(org_feat, trun_low, trun_high)
+        else:
+            trun_feat = org_feat
 
-        # VTM decoding
-        vtm_decoding(bitstream_name, decoded_yuv_name, decoding_log_name)
-
-        # Load decoded YUV
-        decoded_yuv = np.zeros_like(pack_feat)
-        with open(decoded_yuv_name, 'rb') as f:
-            decoded_yuv = np.fromfile(f, dtype=np.uint16 if bit_depth==10 else np.uint8) # save converted YUV file to dist 
-            decoded_yuv = decoded_yuv.reshape(pack_feat.shape) #(H,W)
-
-        # Postprocessing
-        unpack_feat = unpacking(decoded_yuv, [N,C,H,W], model_type)
+        # Scaling
+        quant_feat = uniform_scaling(trun_feat, trun_low, trun_high, bit_depth)      
 
         # Dequantization
-        dequant_feat = uniform_dequantization(unpack_feat, trun_low, trun_high, bit_depth)      
+        dequant_feat = uniform_dequantization(quant_feat, trun_low, trun_high, bit_depth)      
 
         # Save features
         if model_type == 'sd3': dequant_feat = dequant_feat.astype(np.float16)
         elif model_type == 'dinov2': dequant_feat = dequant_feat.astype(np.float32)
         elif model_type == 'llama3': dequant_feat = dequant_feat.astype(np.float32)
         np.save(postprocessed_feat_name, dequant_feat)
-        # print(np.mean((org_feat-dequant_feat)**2), np.mean((trun_feat-dequant_feat)**2), np.mean((quant_feat-unpack_feat)**2))
+        mse = np.mean((org_feat-dequant_feat)**2)
+        mse_all.append(mse)
+    print('Average MSE: ', np.mean(mse_all))
 
 if __name__ == "__main__":
     # model_type = 'llama3'; task = 'csr'
     # max_v = 47.75; min_v = -78; trun_high = 5; trun_low = -5
 
     # model_type = 'dinov2'; task = 'cls'
-    # max_v = 104.1752; min_v = -552.451; trun_high = 20; trun_low = -20
+    # max_v = 104.1752; min_v = -552.451; trun_high = 5; trun_low = -5  # Remember to set different truncation regions for vtm and hyperprior!
 
     # model_type = 'dinov2'; task = 'seg'
-    # max_v = 103.2168; min_v = -530.9767; trun_high = 20; trun_low = -20
+    # max_v = 103.2168; min_v = -530.9767; trun_high = 5; trun_low = -5
 
-    # model_type = 'dinov2'; task = 'dpt'
-    # max_v = [3.2777, 5.0291, 25.0456, 102.0307]; min_v = [-2.4246, -26.8908, -323.2952, -504.4310]; trun_high = [1,2,10,20]; trun_low = [-1,-2,-10,-20]
+    model_type = 'dinov2'; task = 'dpt'
+    max_v = [3.2777, 5.0291, 25.0456, 102.0307]; min_v = [-2.4246, -26.8908, -323.2952, -504.4310]; trun_high = [1,2,10,10]; trun_low = [-1,-2,-10,-10]
     
-    model_type = 'sd3'; task = 'tti'
-    max_v = 4.668; min_v = -6.176; trun_high = 4.668; trun_low = -6.176
+    # model_type = 'sd3'; task = 'tti'
+    # max_v = 4.668; min_v = -6.176; trun_high = 4.668; trun_low = -6.176
 
-    trun_flag = False
+    trun_flag = True
     samples = 0; bit_depth = 10; quant_type = 'uniform'
     
     if trun_flag == False: trun_high = max_v; trun_low = min_v
 
-    QPs = [22, 27, 32, 37, 42]
-    for QP in QPs:
-        org_feat_path = f'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/feature_test'; print('org_feat_path: ', org_feat_path)
-        vtm_root_path = f'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/vtm_baseline'; print('vtm_root_path: ', vtm_root_path)
-    
-        print(model_type, task, trun_flag, quant_type, samples, max_v, min_v, trun_high, trun_low, bit_depth, QP)
-        vtm_pipeline(org_feat_path, vtm_root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth, QP)
-        # vtm_decode_only(org_feat_path, vtm_root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth, QP)
+    # encoder = 'vtm_baseline'
+    # org_feat_path = f'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/feature_test'; print('org_feat_path: ', org_feat_path)
+    # root_path = f'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/{encoder}'; print('root_path: ', root_path)
+    # print(model_type, task, trun_flag, quant_type, samples, max_v, min_v, trun_high, trun_low, bit_depth)
+    # trun_quant_pipeline(org_feat_path, root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth)
+
+    # Remember to set different truncation regions for vtm and hyperprior!
+    bit_depth = 1
+    encoder = 'hyperprior'
+    org_feat_path = f'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/feature_test'; print('org_feat_path: ', org_feat_path)
+    root_path = f'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/{encoder}'; print('root_path: ', root_path)
+    print(model_type, task, trun_flag, quant_type, samples, max_v, min_v, trun_high, trun_low, bit_depth)
+    trun_scale_pipeline(org_feat_path, root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth)

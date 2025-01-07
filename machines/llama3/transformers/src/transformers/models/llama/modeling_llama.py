@@ -888,10 +888,11 @@ class LlamaModel(LlamaPreTrainedModel):
                 
             #gcs, save or load features here
             if layer_idx == 32:
-                # temp_id_file = "/home/gaocs/projects/FCM-LM/Data/llama3/csr/source/temp_id.txt"
-                # with open(temp_id_file, 'r') as file:
-                #     id = file.read().strip(); print('layer_idx, id:', layer_idx, id)
-                # # save original features to disk
+                temp_id_file = "/home/gaocs/projects/FCM-LM/Data/llama3/csr/source/temp_id.txt"
+                with open(temp_id_file, 'r') as file:
+                    id = file.read().strip(); print('layer_idx, id:', layer_idx, id)
+
+                # save original features to disk
                 # hidden_states = layer_outputs[0]    # assign original layer_output[0] to hidden_states
                 # feature = layer_outputs[0]
                 # feature = feature.unsqueeze(0)
@@ -913,8 +914,10 @@ class LlamaModel(LlamaPreTrainedModel):
                 # hidden_states = dequant_feat
 
                 # # load reconstructed features from disk
-                rec_path = '/home/gaocs/projects/FCM-LM/Data/llama3/csr/feature_test'
-                # rec_path = '/home/gaocs/projects/FCM-LM/Data/llama3/csr/vtm_baseline/postprocessed/trunl-78_trunh47.75_uniform0_bitdepth10/QP42'
+                # rec_path = '/home/gaocs/projects/FCM-LM/Data/llama3/csr/feature_test'
+                rec_path = '/home/gaocs/projects/FCM-LM/Data/llama3/csr/hyperprior/postprocessed/trunl-5_trunh5_uniform0_bitdepth1'
+                # rec_path = '/home/gaocs/projects/FCM-LM/Data/llama3/csr/vtm_baseline/postprocessed/trunl-5_trunh5_uniform0_bitdepth10/QP22'
+                # rec_path = '/home/gaocs/projects/FCM-LM/Data/llama3/csr/hyperprior/decoded/trunl-5_trunh5_uniform0_bitdepth1/lambda10_epoch200_lr1e-4_bs40_patch64-4096'
                 feature_name_rec = os.path.join(rec_path,id+'.npy')
                 # print(feature_name_rec)
                 feature_rec = np.load(feature_name_rec)

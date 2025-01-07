@@ -202,16 +202,16 @@ def tti_pipeline(source_captions_name, org_feature_path, org_image_path, rec_fea
     # Extract features
     os.makedirs(org_feature_path, exist_ok=True)
     os.makedirs(org_image_path, exist_ok=True)
-    extract_features_parallel(sd3_pipeline, source_captions, image_names, org_feature_path, org_image_path)
+    # extract_features_parallel(sd3_pipeline, source_captions, image_names, org_feature_path, org_image_path)
 
     # Generate images and evaluate 
     os.makedirs(rec_image_path, exist_ok=True)
-    feat_to_image(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
+    # feat_to_image(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
     
-    # tti_evaluate_fid(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, org_image_path, rec_image_path)
+    tti_evaluate_fid(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, org_image_path, rec_image_path)
 
-    clip_score_fn = partial(clip_score, model_name_or_path=vae_checkpoint_path)
-    tti_evaluate_clip_score(sd3_pipeline, clip_score_fn, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
+    # clip_score_fn = partial(clip_score, model_name_or_path=vae_checkpoint_path)
+    # tti_evaluate_clip_score(sd3_pipeline, clip_score_fn, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
     
 def vtm_baseline_evaluation():
     # Setup related path
@@ -231,22 +231,25 @@ def vtm_baseline_evaluation():
     sd3_pipeline.enable_model_cpu_offload()
 
     max_v = 4.668; min_v = -6.176; trun_high = 4.668; trun_low = -6.176
-
-    trun_flag = False; samples = 0; bit_depth = 10; quant_type = 'uniform'
+    QPs = [22, 27, 32, 37, 42]
+    
+    trun_flag = False
+    samples = 0; bit_depth = 10; quant_type = 'uniform'
+    
     if trun_flag == False: trun_high = max_v; trun_low = min_v
 
-    QPs = [22, 27, 32, 37, 42]
+    # QPs = [0]
     for QP in QPs:
         print(trun_flag, quant_type, samples, max_v, min_v, trun_high, trun_low, bit_depth, QP)
         rec_feature_path = f"{vtm_root_path}/postprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}"
         rec_image_path = f"{vtm_root_path}/postprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}_image"
 
         # Generate images 
-        # os.makedirs(rec_image_path, exist_ok=True)
-        # feat_to_image(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
+        os.makedirs(rec_image_path, exist_ok=True)
+        feat_to_image(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
         
         # Evaluation
-        # tti_evaluate_fid(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, org_image_path, rec_image_path)
+        tti_evaluate_fid(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, org_image_path, rec_image_path)
 
         clip_score_fn = partial(clip_score, model_name_or_path=vae_checkpoint_path)
         tti_evaluate_clip_score(sd3_pipeline, clip_score_fn, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
@@ -269,13 +272,15 @@ def hyperprior_baseline_evaluation():
     sd3_pipeline.enable_model_cpu_offload()
 
     max_v = 4.668; min_v = -6.176; trun_high = 4.668; trun_low = -6.176
+    lambda_value_all = [0.005, 0.01, 0.02, 0.05, 0.2]
+    epochs = 60; learning_rate = "1e-4"; batch_size = 32; patch_size = "512 512"   # height first, width later
 
-    trun_flag = False; samples = 0; bit_depth = 1; quant_type = 'uniform'
+    trun_flag = False
+    samples = 0; bit_depth = 1; quant_type = 'uniform'
+    
     if trun_flag == False: trun_high = max_v; trun_low = min_v
 
-    lambdas = [0.2]
-    epochs = 60; learning_rate = "1e-4"; batch_size = 32; patch_size = "512 512"
-    for lambda_v in lambdas:
+    for lambda_v in lambda_value_all:
         print(trun_flag, quant_type, samples, max_v, min_v, trun_high, trun_low, bit_depth, lambda_v)
         rec_feature_path = f"{root_path}/decoded/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/" \
                            f"lambda{lambda_v}_epoch{epochs}_lr{learning_rate}_bs{batch_size}_patch{patch_size.replace(' ', '-')}"
@@ -284,7 +289,7 @@ def hyperprior_baseline_evaluation():
 
         # Generate images 
         os.makedirs(rec_image_path, exist_ok=True)
-        # feat_to_image(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
+        feat_to_image(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
         
         # Evaluation
         tti_evaluate_fid(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, org_image_path, rec_image_path)
@@ -292,21 +297,21 @@ def hyperprior_baseline_evaluation():
         clip_score_fn = partial(clip_score, model_name_or_path=vae_checkpoint_path)
         tti_evaluate_clip_score(sd3_pipeline, clip_score_fn, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
 
-if __name__ == "__main__":
-    # vtm_baseline_evaluation()
-    hyperprior_baseline_evaluation()
+# if __name__ == "__main__":
+#     vtm_baseline_evaluation()
+#     # hyperprior_baseline_evaluation()
 
 
 # To extract feature, run the tti_pipeline below
-# if __name__ == "__main__":
-#     source_captions_name = "/home/gaocs/projects/FCM-LM/Data/sd3/tti/source/captions_val2017_select100.txt"
-#     org_feature_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/feature_test'
-#     org_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/image_test'
-#     rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/feature_test'
-#     rec_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/image_test'
-#     vae_checkpoint_path = "/home/gaocs/projects/FCM-LM/Data/sd3/tti/pretrained_head/clip-vit-base-patch16"
-#     sd3_checkpoint_path = "/home/gaocs/models/StableDiffusion/stable-diffusion-3-medium-diffusers"
+if __name__ == "__main__":
+    source_captions_name = "/home/gaocs/projects/FCM-LM/Data/sd3/tti/source/captions_val2017_select100.txt"
+    org_feature_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/feature_test'
+    org_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/image_test'
+    rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/hyperprior/postprocessed/trunl-6.176_trunh4.668_uniform0_bitdepth1'
+    rec_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/hyperprior/postprocessed/trunl-6.176_trunh4.668_uniform0_bitdepth1_image'
+    vae_checkpoint_path = "/home/gaocs/projects/FCM-LM/Data/sd3/tti/pretrained_head/clip-vit-base-patch16"
+    sd3_checkpoint_path = "/home/gaocs/models/StableDiffusion/stable-diffusion-3-medium-diffusers"
 
-#     tti_pipeline(source_captions_name, org_feature_path, org_image_path, rec_feature_path, rec_image_path, vae_checkpoint_path, sd3_checkpoint_path)
+    tti_pipeline(source_captions_name, org_feature_path, org_image_path, rec_feature_path, rec_image_path, vae_checkpoint_path, sd3_checkpoint_path)
 
 

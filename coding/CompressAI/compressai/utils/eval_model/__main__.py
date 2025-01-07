@@ -281,6 +281,19 @@ def eval_model(
         metrics[k] = v / len(filepaths)
     return metrics
 
+# Custom type parsing function
+def parse_truncation(value):
+    try:
+        # Try to parse as a float
+        return float(value)
+    except ValueError:
+        # Try to parse as a list of floats (comma-separated)
+        try:
+            return [float(x) for x in value.strip('[]').split(',')]
+        except ValueError:
+            raise argparse.ArgumentTypeError(
+                f"Invalid input for --truncation: {value}. Must be a float or a list of floats."
+            )
 
 def setup_args():
     # Common options.
@@ -362,16 +375,16 @@ def setup_args():
     parent_parser.add_argument(
         "-trun_low",
         "--trun_low",
-        type=float,
+        type=parse_truncation,
         default=-5,
-        help="Please input the truncated lower value.",
+        help="Please input the truncated upper value (float or list of floats).",
     )
     parent_parser.add_argument(
         "-trun_high",
         "--trun_high",
-        type=float,
+        type=parse_truncation,
         default=5,
-        help="Please input the truncated upper value.",
+        help="Please input the truncated upper value (float or list of floats).",
     )
     parent_parser.add_argument(
         "-quant_type",

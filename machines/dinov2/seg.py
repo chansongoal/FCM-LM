@@ -490,26 +490,26 @@ def seg_pipeline(config_path: str, backbone_checkpoint_path: str, head_checkpoin
     
     # Extract features
     os.makedirs(org_feature_path, exist_ok=True)
-    extract_features(model, source_img_path, org_feature_path, image_list)
+    # extract_features(model, source_img_path, org_feature_path, image_list)
     
-    # # Evaluate and print results
-    # all_iou, all_miou, mse_list = seg_evaluate(model, source_img_path, org_feature_path, rec_feature_path, image_list, backbone_model)
+    # Evaluate and print results
+    all_iou, all_miou, mse_list = seg_evaluate(model, source_img_path, org_feature_path, rec_feature_path, image_list, backbone_model)
     
-    # print(f"IoU: ", end=" ")
-    # for iou in all_iou: print(f"{iou*100:.4f}", end=" ") 
-    # print(f"\nmIoU: {all_miou*100:.4f}")
-    # print(f"Feature MSE: {np.mean(mse_list):.8f}")
+    print(f"IoU: ", end=" ")
+    for iou in all_iou: print(f"{iou*100:.4f}", end=" ") 
+    print(f"\nmIoU: {all_miou*100:.4f}")
+    print(f"Feature MSE: {np.mean(mse_list):.8f}")
 
 def vtm_baseline_evaluation():
     # Set up paths
     config_path = 'cfg/dinov2_vitg14_voc2012_linear_config.py'
-    backbone_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/pretrained_head/dinov2_vitg14_pretrain.pth'
+    backbone_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_pretrain.pth'
     head_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/pretrained_head/dinov2_vitg14_voc2012_linear_head.pth'
     
     source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/source/VOC2012'
     source_split_name = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/source/val_20.txt'
     org_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/feature_test'
-    vtm_root_path = f'/home/gaocs/projects/FCM-LM/Data/dinov2/cls/vtm_baseline'; print('vtm_root_path: ', vtm_root_path)
+    vtm_root_path = f'/home/gaocs/projects/FCM-LM/Data/dinov2/seg/vtm_baseline'; print('vtm_root_path: ', vtm_root_path)
     
     # Load configuration
     cfg = mmcv.Config.fromfile(config_path)
@@ -541,17 +541,61 @@ def vtm_baseline_evaluation():
         print(f"\nmIoU: {all_miou*100:.4f}")
         print(f"Feature MSE: {np.mean(mse_list):.8f}")
 
-if __name__ == "__main__":
-    vtm_baseline_evaluation()
+def hyperprior_baseline_evaluation():
+    # Set up paths
+    config_path = 'cfg/dinov2_vitg14_voc2012_linear_config.py'
+    backbone_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_pretrain.pth'
+    head_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/pretrained_head/dinov2_vitg14_voc2012_linear_head.pth'
+    
+    source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/source/VOC2012'
+    source_split_name = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/source/val_20.txt'
+    org_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/feature_test'
+    root_path = f'/home/gaocs/projects/FCM-LM/Data/dinov2/seg/hyperprior'; print('root_path: ', root_path)
+    
+    # Load configuration
+    cfg = mmcv.Config.fromfile(config_path)
+    
+    # Setup source image list
+    with open(source_split_name) as f:
+        image_list = f.readlines()
+        image_list = ''.join(image_list).strip('\n').splitlines()
+
+    # Setup models
+    backbone_model = setup_backbone(backbone_checkpoint_path)
+    model = build_segmentation_model(cfg, backbone_model, head_checkpoint_path)
+    
+    # Evaluate and print results
+    max_v = 103.2168; min_v = -530.9767; trun_high = 5; trun_low = -5
+    lambda_value_all = [0.0005, 0.001, 0.003, 0.007, 0.015]
+    epochs = 800; learning_rate = "1e-4"; batch_size = 128; patch_size = "256 256"   # height first, width later
+
+    trun_flag = True
+    samples = 0; bit_depth = 1; quant_type = 'uniform'
+
+    if trun_flag == False: trun_high = max_v; trun_low = min_v
+
+    for lambda_value in lambda_value_all:
+        print(trun_low, trun_high, samples, bit_depth, quant_type, lambda_value)
+        rec_feature_path = f"{root_path}/decoded/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/lambda{lambda_value}_epoch{epochs}_lr{learning_rate}_bs{batch_size}_patch{patch_size.replace(' ', '-')}"
+
+        all_iou, all_miou, mse_list = seg_evaluate(model, source_img_path, org_feature_path, rec_feature_path, image_list, backbone_model)
+        # print(f"IoU: ", end=" ")
+        # for iou in all_iou: print(f"{iou*100:.4f}", end=" ") 
+        print(f"\nmIoU: {all_miou*100:.4f}")
+        print(f"Feature MSE: {np.mean(mse_list):.8f}")
 
 # if __name__ == "__main__":
-#     config_path = f"cfg/dinov2_vitg14_voc2012_linear_config.py"
-#     backbone_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/pretrained_head/dinov2_vitg14_pretrain.pth'
-#     head_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/pretrained_head/dinov2_vitg14_voc2012_linear_head.pth'
-    
-#     source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/source/VOC2012'
-#     source_split_name = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/source/val_20.txt'
-#     org_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/feature_test'
-#     rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/feature_test'
+#     # vtm_baseline_evaluation()
+#     hyperprior_baseline_evaluation()
 
-#     seg_pipeline(config_path, backbone_checkpoint_path, head_checkpoint_path, source_img_path, source_split_name, org_feature_path, rec_feature_path)
+if __name__ == "__main__":
+    config_path = f"cfg/dinov2_vitg14_voc2012_linear_config.py"
+    backbone_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_pretrain.pth'
+    head_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/pretrained_head/dinov2_vitg14_voc2012_linear_head.pth'
+    
+    source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/source/VOC2012'
+    source_split_name = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/source/val_20.txt'
+    org_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/feature_test'
+    rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/hyperprior/postprocessed/trunl-5_trunh5_uniform0_bitdepth1'
+
+    seg_pipeline(config_path, backbone_checkpoint_path, head_checkpoint_path, source_img_path, source_split_name, org_feature_path, rec_feature_path)
