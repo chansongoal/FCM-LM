@@ -134,7 +134,7 @@ We have provided an exemplar folder "Data_example" which illustrates the data fo
 
 - ## Stable Diffusion 3
 
-    - **Text-to-image synthesis:** Please download [COCO 2017 caption annotations](https://cocodataset.org/#download) and put it in the *“Data_example/sd3/tti/source”* folder. The selected 100 captions are processed by *"machines/sd3/caption_processing.py"* and the processed source caption file can be found in the *“Data_example/sd3/tti/source”* folder.
+    - **Text-to-image synthesis:** Please download [COCO 2017 caption annotations](https://cocodataset.org/#download) and put it in the *“Data_example/sd3/tti/source”* folder. The selected 100 captions are processed by *"utils/coco_caption_processing.py"* and the processed source caption file can be found in the *“Data_example/sd3/tti/source”* folder.
 
 # Feature Test Dataset
 
