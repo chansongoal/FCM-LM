@@ -6,37 +6,37 @@ Feature coding is a main branch of the topic of “Coding for Machines” which 
 
 # Key Features
 
-- ## Feature Test Dataset that Covers:
+- ## Feature Test Dataset
 
-    - **Three types of large models:** discriminative models, generative models, and the hybrid of them
+    - **Covers 3 types of large models:** discriminative models (DINOv2), generative models (Llama3), and hybrid models (SD3)
 
-    - **Diverse source modalities:** textual data, visual data, and the conversion between them
+    - **Covers 2 types of source modalities:** textual data, visual data, and the conversion between them
 
-    - **Various tasks:** classification, segmentation, depth estimation, common sense reasoning, and text-to-image synthesis
+    - **Covers 5 tasks:** classification, segmentation, depth estimation, common sense reasoning, and text-to-image synthesis
 
-- ## Unified Test Condition that Defines:
+- ## Unified Test Condition
 
-    - **Bitrate computation:** BPFP (bits per feature point)
+    - **Standadized bitrate computation:** BPFP (bits per feature point)
 
-    - **Task accuracy evaluation:** various task head (specialized from pretrained models)
+    - **Unified task accuracy evaluation pipeline:** consistent task heads and evaluation pipelines
 
-- ## Benchmark that Covers:
+- ## Baselines and Benchmark
 
-    - **Traditional coding standards:** VTM-based baseline
+    - **Traditional/handcrafted baseline:** VTM-based baseline
 
-    - **Learning-based coding schemes:** hyperprior-based baseline
+    - **Learning-based baseline:** hyperprior-based baseline
 
 # Environments Set Up
 
 ## Coding
 
-- **VTM baseline** Any CPU device works
+- **VTM baseline:** Any CPU device works
 
 - **Hyperprior baseline** 
 
     - Step 1: build the docker image from *“docker/dockerfile_compressai_llama3”*. For example, a docker image named *“gaocs/compressai_llama3:2.0.0-cuda11.7-cudnn8-runtime”* will be built by running:
 
-        `docker build -t gaocs/compressai_llama3:2.0.0-cuda11.7-cudnn8-runtim`
+        `docker build -t gaocs/compressai_llama3:2.0.0-cuda11.7-cudnn8-runtime`
 
     - Step 2: Enter a docker container and run the command below to install CompressAI in editable mode:
 
@@ -50,13 +50,13 @@ Feature coding is a main branch of the topic of “Coding for Machines” which 
 
 - **Llama3:** build the docker image from *“docker/dockerfile_compressai_llama3”*. Then run:
 
-    `cd machines/llama3/transformers ; pip install -e .`
+    `cd machines/llama3/transformers; pip install -e .`
 
 - **Stable Diffusion 3:** build the docker image from *“docker/dockerfile_sd3”*. Then run:
 
     `cd machines/sd3/diffuers; pip install -e .`
 
-Please note that the feature extraction depends on specific pytorch versions. To obtain identical features, please follow the enviromental setups.
+Please note that the feature extraction depends on specific pytorch versions. To obtain identical features, please follow the environmental setups.
 
 # Usage Guidelines
 
@@ -118,7 +118,7 @@ The feature extraction and task evaluation process use the same codes. You are f
         `cd machines/sd3/; python sd3.py`
 
 # Source Data Preparation
-We have provided an examplar folder "Data_example" which illustrates the data folder structure and includes necessary source files. Please download it and put it in a proper directory. 
+We have provided an exemplar folder "Data_example" which illustrates the data folder structure and includes necessary source files. Please download it and put it in a proper directory. 
 
 - ## DINOv2
 
@@ -130,11 +130,11 @@ We have provided an examplar folder "Data_example" which illustrates the data fo
 
 - ## Llama3
 
-    - **Common sense reasoning:** Please download [Arc-Challenge dataset](https://huggingface.co/datasets/allenai/ai2_arc/tree/main/ARC-Challenge) and process it to JSON file. Then put the processed JSON file in the *“Data_example/llama3/csr/source”* folder. We have provided the JSON file for the test dataset in the examplar folder.
+    - **Common sense reasoning:** Please download [Arc-Challenge dataset](https://huggingface.co/datasets/allenai/ai2_arc/tree/main/ARC-Challenge) and process it to JSON file. Then put the processed JSON file in the *“Data_example/llama3/csr/source”* folder. We have provided the JSON file for the test dataset in the exemplar folder.
 
 - ## Stable Diffusion 3
 
-    - **Text-to-image synthesis:** Please download [COCO 2017 caption annotations](https://cocodataset.org/#download) and put it in the *“Data_example/sd3/tti/source”* folder. The selected 100 captions are processed by *machines/sd3/caption_processing.py* and the processed source caption file can be found in the *“Data_example/sd3/tti/source”* folder.
+    - **Text-to-image synthesis:** Please download [COCO 2017 caption annotations](https://cocodataset.org/#download) and put it in the *“Data_example/sd3/tti/source”* folder. The selected 100 captions are processed by *"machines/sd3/caption_processing.py"* and the processed source caption file can be found in the *“Data_example/sd3/tti/source”* folder.
 
 # Feature Test Dataset
 
@@ -169,3 +169,6 @@ Download from the below links and put them in the *“Data_example/model_type/ta
 
 - **Stable Diffusion 3:**
 <https://huggingface.co/stabilityai/stable-diffusion-3-medium-diffusers/tree/main>
+
+# Acknowledgement
+Thanks a lot to the contributors: Yifan Ma, Qiaoxi Chen and Yenan Xu.
