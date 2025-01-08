@@ -584,18 +584,21 @@ def hyperprior_baseline_evaluation():
         print(f"\nmIoU: {all_miou*100:.4f}")
         print(f"Feature MSE: {np.mean(mse_list):.8f}")
 
-# if __name__ == "__main__":
-#     # vtm_baseline_evaluation()
-#     hyperprior_baseline_evaluation()
-
+# run below to evaluate the reconstructed features
 if __name__ == "__main__":
-    config_path = f"cfg/dinov2_vitg14_voc2012_linear_config.py"
-    backbone_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_pretrain.pth'
-    head_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/pretrained_head/dinov2_vitg14_voc2012_linear_head.pth'
-    
-    source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/source/VOC2012'
-    source_split_name = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/source/val_20.txt'
-    org_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/feature_test'
-    rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/hyperprior/postprocessed/trunl-5_trunh5_uniform0_bitdepth1'
+    # vtm_baseline_evaluation()
+    hyperprior_baseline_evaluation()
 
-    seg_pipeline(config_path, backbone_checkpoint_path, head_checkpoint_path, source_img_path, source_split_name, org_feature_path, rec_feature_path)
+# run below to extract original features as the dataset. 
+# You can skip feature extraction if you have download the test dataset from https://drive.google.com/drive/folders/1RZFGlBd6wZr4emuGO4_YJWfKPtAwcMXQ
+# if __name__ == "__main__":
+#     config_path = f"cfg/dinov2_vitg14_voc2012_linear_config.py"
+#     backbone_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_pretrain.pth'
+#     head_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/pretrained_head/dinov2_vitg14_voc2012_linear_head.pth'
+    
+#     source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/source/VOC2012'
+#     source_split_name = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/source/val_20.txt'
+#     org_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/feature_test'
+#     rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/seg/hyperprior/postprocessed/trunl-5_trunh5_uniform0_bitdepth1'
+
+#     seg_pipeline(config_path, backbone_checkpoint_path, head_checkpoint_path, source_img_path, source_split_name, org_feature_path, rec_feature_path)

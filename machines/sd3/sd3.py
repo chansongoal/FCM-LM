@@ -297,21 +297,22 @@ def hyperprior_baseline_evaluation():
         clip_score_fn = partial(clip_score, model_name_or_path=vae_checkpoint_path)
         tti_evaluate_clip_score(sd3_pipeline, clip_score_fn, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
 
-# if __name__ == "__main__":
-#     vtm_baseline_evaluation()
-#     # hyperprior_baseline_evaluation()
-
-
-# To extract feature, run the tti_pipeline below
 if __name__ == "__main__":
-    source_captions_name = "/home/gaocs/projects/FCM-LM/Data/sd3/tti/source/captions_val2017_select100.txt"
-    org_feature_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/feature_test'
-    org_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/image_test'
-    rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/hyperprior/postprocessed/trunl-6.176_trunh4.668_uniform0_bitdepth1'
-    rec_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/hyperprior/postprocessed/trunl-6.176_trunh4.668_uniform0_bitdepth1_image'
-    vae_checkpoint_path = "/home/gaocs/projects/FCM-LM/Data/sd3/tti/pretrained_head/clip-vit-base-patch16"
-    sd3_checkpoint_path = "/home/gaocs/models/StableDiffusion/stable-diffusion-3-medium-diffusers"
+    vtm_baseline_evaluation()
+    # hyperprior_baseline_evaluation()
 
-    tti_pipeline(source_captions_name, org_feature_path, org_image_path, rec_feature_path, rec_image_path, vae_checkpoint_path, sd3_checkpoint_path)
+
+# run below to extract original features as the dataset. 
+# You can skip feature extraction if you have download the test dataset from https://drive.google.com/drive/folders/1RZFGlBd6wZr4emuGO4_YJWfKPtAwcMXQ
+# if __name__ == "__main__":
+#     source_captions_name = "/home/gaocs/projects/FCM-LM/Data/sd3/tti/source/captions_val2017_select100.txt"
+#     org_feature_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/feature_test'
+#     org_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/image_test'
+#     rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/hyperprior/postprocessed/trunl-6.176_trunh4.668_uniform0_bitdepth1'
+#     rec_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/hyperprior/postprocessed/trunl-6.176_trunh4.668_uniform0_bitdepth1_image'
+#     vae_checkpoint_path = "/home/gaocs/projects/FCM-LM/Data/sd3/tti/pretrained_head/clip-vit-base-patch16"
+#     sd3_checkpoint_path = "/home/gaocs/models/StableDiffusion/stable-diffusion-3-medium-diffusers"
+
+#     tti_pipeline(source_captions_name, org_feature_path, org_image_path, rec_feature_path, rec_image_path, vae_checkpoint_path, sd3_checkpoint_path)
 
 
