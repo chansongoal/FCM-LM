@@ -1,8 +1,8 @@
 # Introduction
 
-This project is the official implementation of the paper titled “[Feature Coding in the Era of Large Models: Dataset, Test Conditions, and Benchmark](https://arxiv.org/abs/2412.04307)”. 
+This project is the official implementation of the paper titled **“[Feature Coding in the Era of Large Models: Dataset, Test Conditions, and Benchmark](https://arxiv.org/abs/2412.04307)”**. 
 
-Feature coding is a main branch of the topic of “Coding for Machines” which targeted at the scenario where a neural network is split into two parts and deployed on different devices. In this scenario, the intermediate feature are encoded and transmitted between devices.
+**"Feature coding"** is a key branch of the field of **"Coding for Machines"**, focusing on scenarios where a neural network is divided into multiple parts and deployed across different devices. In such cases, the intermediate features are encoded and transmitted between devices. The primary goal of feature coding is to minimize the bitrate under a certain constraint of task accuracy or maxmize the task accuracy under a certain constraint of bitrate.
 
 # Key Features
 
@@ -16,9 +16,9 @@ Feature coding is a main branch of the topic of “Coding for Machines” which 
 
 - ## Unified Test Condition
 
-    - **Standadized bitrate computation:** BPFP (bits per feature point)
+    - **Defines the standadized bitrate computation:** BPFP (bits per feature point)
 
-    - **Unified task accuracy evaluation pipeline:** consistent task heads and evaluation pipelines
+    - **Defines the unified task accuracy evaluation:** consistent task heads and evaluation pipelines
 
 - ## Baselines and Benchmark
 
@@ -56,7 +56,7 @@ Feature coding is a main branch of the topic of “Coding for Machines” which 
 
     `cd machines/sd3/diffuers; pip install -e .`
 
-Please note that the feature extraction depends on specific pytorch versions. To obtain identical features, please follow the environmental setups.
+    Please note that the feature extraction depends on specific pytorch versions. To obtain identical features, please follow the environmental setups.
 
 # Usage Guidelines
 
@@ -171,4 +171,4 @@ Download from the below links and put them in the *“Data_example/model_type/ta
 <https://huggingface.co/stabilityai/stable-diffusion-3-medium-diffusers/tree/main>
 
 # Acknowledgement
-Thanks a lot to the contributors: Yifan Ma, Qiaoxi Chen and Yenan Xu.
+Special thanks to **Yifan Ma, Qiaoxi Chen, and Yenan Xu,** for their valuable contributions.
