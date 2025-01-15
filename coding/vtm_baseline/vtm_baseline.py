@@ -263,11 +263,11 @@ def vtm_decode_only(org_feat_path, vtm_root_path, model_type, trun_flag, samples
         # Set related names
         org_feat_name = os.path.join(org_feat_path, f"{feat_name[:-4]}.npy"); #print(org_feat_name)
         preprocessed_yuv_name = os.path.join(preprocessed_yuv_path, f"{feat_name[:-4]}.yuv"); #print(preprocessed_yuv_name)
-        bitstream_name = os.path.join(bitstream_path, f"{feat_name[:-4]}.vvc"); #print(bitstream_name)
+        bitstream_name = os.path.join(bitstream_path, f"{feat_name[:-4]}.bin"); #print(bitstream_name)
         decoded_yuv_name = os.path.join(decoded_yuv_path, f"{feat_name[:-4]}.yuv"); #print(decoded_yuv_name)
         postprocessed_feat_name = os.path.join(postprocessed_feat_path, f"{feat_name[:-4]}.npy"); #print(postprocessed_feat_name)
-        encoding_log_name = os.path.join(encoding_log_path, f"{feat_name[:-4]}.txt"); #print(encoding_log_name)
-        decoding_log_name = os.path.join(decoding_log_path, f"{feat_name[:-4]}.txt"); #print(decoding_log_name)
+        encoding_log_name = os.path.join(encoding_log_path, f"{feat_name[:-4]}.log"); #print(encoding_log_name)
+        decoding_log_name = os.path.join(decoding_log_path, f"{feat_name[:-4]}.log"); #print(decoding_log_name)
         
         # Load original feature
         org_feat = np.load(org_feat_name)
@@ -299,9 +299,12 @@ def vtm_decode_only(org_feat_path, vtm_root_path, model_type, trun_flag, samples
         np.save(postprocessed_feat_name, dequant_feat)
         # print(np.mean((org_feat-dequant_feat)**2), np.mean((trun_feat-dequant_feat)**2), np.mean((quant_feat-unpack_feat)**2))
 
+    command = f'rm -rf {decoded_yuv_path}'
+    os.system(command)
+
 if __name__ == "__main__":
-    # model_type = 'llama3'; task = 'csr'
-    # max_v = 47.75; min_v = -78; trun_high = 5; trun_low = -5
+    model_type = 'llama3'; task = 'csr'
+    max_v = 47.75; min_v = -78; trun_high = 5; trun_low = -5
 
     # model_type = 'dinov2'; task = 'cls'
     # max_v = 104.1752; min_v = -552.451; trun_high = 20; trun_low = -20
@@ -312,19 +315,19 @@ if __name__ == "__main__":
     # model_type = 'dinov2'; task = 'dpt'
     # max_v = [3.2777, 5.0291, 25.0456, 102.0307]; min_v = [-2.4246, -26.8908, -323.2952, -504.4310]; trun_high = [1,2,10,20]; trun_low = [-1,-2,-10,-20]
     
-    model_type = 'sd3'; task = 'tti'
-    max_v = 4.668; min_v = -6.176; trun_high = 4.668; trun_low = -6.176
+    # model_type = 'sd3'; task = 'tti'
+    # max_v = 4.668; min_v = -6.176; trun_high = 4.668; trun_low = -6.176
 
-    trun_flag = False
+    trun_flag = True
     samples = 0; bit_depth = 10; quant_type = 'uniform'
     
     if trun_flag == False: trun_high = max_v; trun_low = min_v
 
-    QPs = [22, 27, 32, 37, 42]
+    QPs = [42]
     for QP in QPs:
-        org_feat_path = f'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/feature_test'; print('org_feat_path: ', org_feat_path)
+        org_feat_path = f'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/feature_test_all'; print('org_feat_path: ', org_feat_path)
         vtm_root_path = f'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/vtm_baseline'; print('vtm_root_path: ', vtm_root_path)
     
         print(model_type, task, trun_flag, quant_type, samples, max_v, min_v, trun_high, trun_low, bit_depth, QP)
-        vtm_pipeline(org_feat_path, vtm_root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth, QP)
-        # vtm_decode_only(org_feat_path, vtm_root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth, QP)
+        # vtm_pipeline(org_feat_path, vtm_root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth, QP)
+        vtm_decode_only(org_feat_path, vtm_root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth, QP)

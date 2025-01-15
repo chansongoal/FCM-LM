@@ -133,7 +133,7 @@ class ARCChallengeSolver:
         #             filtered_data.append(entry)
 
         # # Save the sampled results to a JSON file
-        # with open("/home/gaocs/projects/FCM-LM/Data/llama3/csr/source/sampled_longest100.jsonl", 'w', encoding='utf-8') as f:
+        # with open("/home/gaocs/projects/FCM-LM/Data/llama3/csr/source/arc_challenge_sampled_longest100.jsonl", 'w', encoding='utf-8') as f:
         #     for entry in filtered_data:
         #         json.dump(entry, f, ensure_ascii=False)
         #         f.write('\n')
@@ -149,29 +149,20 @@ class ARCChallengeSolver:
         accuracy = sum(pred == ans for pred, ans in zip(preds, self.answer_keys)) / len(self.answer_keys)
         return accuracy
 
-    def run(self):
+    def llama_pipeline(self):
         self.load_data()
         self.prepare_inputs()
         self.initialize_pipeline()
         self.generate_predictions()
         # self.save_results()
         accuracy = self.calculate_accuracy()
-        print(f"Accuracy: {accuracy:.4f}")
-    
-    def extract_features(self):
-        self.load_data()
-        self.prepare_inputs()
-        self.initialize_pipeline()
-        self.generate_predictions()
-        # self.save_results()
-        accuracy = self.calculate_accuracy()
-        print(f"Accuracy: {accuracy:.8f}")
+        print(f"Accuracy: {accuracy*100:.4f}")
 
 if __name__ == "__main__":
     model_path = "/home/gaocs/models/llama/Meta-Llama-3-8B-Instruct"
-    org_json_path = "/home/gaocs/projects/FCM-LM/Data/llama3/csr/source/sampled_longest100.jsonl"
+    org_json_path = "/home/gaocs/projects/FCM-LM/Data/llama3/csr/source/arc_challenge_sampled_longest100.jsonl"
     result_json_path = 'result.json'
     temp_id_file = "/home/gaocs/projects/FCM-LM/Data/llama3/csr/source/temp_id.txt"
 
     solver = ARCChallengeSolver(model_path, org_json_path, result_json_path, temp_id_file)
-    solver.extract_features()
+    solver.llama_pipeline()

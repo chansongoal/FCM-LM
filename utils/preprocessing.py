@@ -179,19 +179,26 @@ def unpacking(feat, shape, model_type):
     return feat
 
 
-def trun_quant_pipeline(org_feat_path, root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth):
+def trun_quant_pipeline(org_feat_path, org_sample_name, root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth):
     # Set related paths
     preprocessed_yuv_path = f"{root_path}/preprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}"; os.makedirs(preprocessed_yuv_path, exist_ok=True)
     postprocessed_feat_path = f"{root_path}/postprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP0"; os.makedirs(postprocessed_feat_path, exist_ok=True)
 
-    feat_names = os.listdir(org_feat_path)
+    # feat_names = os.listdir(org_feat_path)
+    feat_names = []
+    with open(org_sample_name, 'r', encoding='utf-8') as file:
+        # Read the entire file content
+        for content in file:
+            # Split the content by spaces
+            feat_names.append(content.strip())
+    # print(feat_names)
     # feat_names = feat_names[:1]
     mse_all = []
     for idx, feat_name in enumerate(feat_names):
         # Set related names
-        org_feat_name = os.path.join(org_feat_path, f"{feat_name[:-4]}.npy"); #print(org_feat_name)
-        preprocessed_yuv_name = os.path.join(preprocessed_yuv_path, f"{feat_name[:-4]}.yuv"); #print(preprocessed_yuv_name)
-        postprocessed_feat_name = os.path.join(postprocessed_feat_path, f"{feat_name[:-4]}.npy"); #print(postprocessed_feat_name)
+        org_feat_name = os.path.join(org_feat_path, f"{feat_name}.npy"); #print(org_feat_name)
+        preprocessed_yuv_name = os.path.join(preprocessed_yuv_path, f"{feat_name}.yuv"); #print(preprocessed_yuv_name)
+        postprocessed_feat_name = os.path.join(postprocessed_feat_path, f"{feat_name}.npy"); #print(postprocessed_feat_name)
         
         # Load original feature
         org_feat = np.load(org_feat_name)
@@ -219,19 +226,25 @@ def trun_quant_pipeline(org_feat_path, root_path, model_type, trun_flag, samples
         mse_all.append(mse)
     print('Average MSE: ', np.mean(mse_all))
 
-def trun_scale_pipeline(org_feat_path, root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth):
+def trun_scale_pipeline(org_feat_path, org_sample_name, root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth):
     # Set related paths
     preprocessed_yuv_path = f"{root_path}/preprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}"; os.makedirs(preprocessed_yuv_path, exist_ok=True)
     postprocessed_feat_path = f"{root_path}/postprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}"; os.makedirs(postprocessed_feat_path, exist_ok=True)
 
-    feat_names = os.listdir(org_feat_path)
+    # feat_names = os.listdir(org_feat_path)
+    feat_names = []
+    with open(org_sample_name, 'r', encoding='utf-8') as file:
+        # Read the entire file content
+        for content in file:
+            # Split the content by spaces
+            feat_names.append(content.strip())
     # feat_names = feat_names[:1]
     mse_all = []
     for idx, feat_name in enumerate(feat_names):
         # Set related names
-        org_feat_name = os.path.join(org_feat_path, f"{feat_name[:-4]}.npy"); #print(org_feat_name)
-        preprocessed_yuv_name = os.path.join(preprocessed_yuv_path, f"{feat_name[:-4]}.yuv"); #print(preprocessed_yuv_name)
-        postprocessed_feat_name = os.path.join(postprocessed_feat_path, f"{feat_name[:-4]}.npy"); #print(postprocessed_feat_name)
+        org_feat_name = os.path.join(org_feat_path, f"{feat_name}.npy"); #print(org_feat_name)
+        preprocessed_yuv_name = os.path.join(preprocessed_yuv_path, f"{feat_name}.yuv"); #print(preprocessed_yuv_name)
+        postprocessed_feat_name = os.path.join(postprocessed_feat_path, f"{feat_name}.npy"); #print(postprocessed_feat_name)
         
         # Load original feature
         org_feat = np.load(org_feat_name)
@@ -260,8 +273,8 @@ def trun_scale_pipeline(org_feat_path, root_path, model_type, trun_flag, samples
     print('Average MSE: ', np.mean(mse_all))
 
 if __name__ == "__main__":
-    # model_type = 'llama3'; task = 'csr'
-    # max_v = 47.75; min_v = -78; trun_high = 5; trun_low = -5
+    model_type = 'llama3'; task = 'csr'
+    max_v = 47.75; min_v = -78; trun_high = 5; trun_low = -5
 
     # model_type = 'dinov2'; task = 'cls'
     # max_v = 104.1752; min_v = -552.451; trun_high = 5; trun_low = -5  # Remember to set different truncation regions for vtm and hyperprior!
@@ -269,8 +282,8 @@ if __name__ == "__main__":
     # model_type = 'dinov2'; task = 'seg'
     # max_v = 103.2168; min_v = -530.9767; trun_high = 5; trun_low = -5
 
-    model_type = 'dinov2'; task = 'dpt'
-    max_v = [3.2777, 5.0291, 25.0456, 102.0307]; min_v = [-2.4246, -26.8908, -323.2952, -504.4310]; trun_high = [1,2,10,10]; trun_low = [-1,-2,-10,-10]
+    # model_type = 'dinov2'; task = 'dpt'
+    # max_v = [3.2777, 5.0291, 25.0456, 102.0307]; min_v = [-2.4246, -26.8908, -323.2952, -504.4310]; trun_high = [1,2,10,10]; trun_low = [-1,-2,-10,-10]
     
     # model_type = 'sd3'; task = 'tti'
     # max_v = 4.668; min_v = -6.176; trun_high = 4.668; trun_low = -6.176
@@ -280,16 +293,19 @@ if __name__ == "__main__":
     
     if trun_flag == False: trun_high = max_v; trun_low = min_v
 
-    # encoder = 'vtm_baseline'
-    # org_feat_path = f'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/feature_test'; print('org_feat_path: ', org_feat_path)
-    # root_path = f'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/{encoder}'; print('root_path: ', root_path)
-    # print(model_type, task, trun_flag, quant_type, samples, max_v, min_v, trun_high, trun_low, bit_depth)
-    # trun_quant_pipeline(org_feat_path, root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth)
+    org_sample_name = fr'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/source/arc_challenge_test_longest100_name.txt'
+    # org_sample_name = fr'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/source/captions_val2017_select100_vtm.txt'
+
+    encoder = 'vtm_baseline'
+    org_feat_path = f'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/feature_test_all'; print('org_feat_path: ', org_feat_path)
+    root_path = f'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/{encoder}'; print('root_path: ', root_path)
+    print(model_type, task, trun_flag, quant_type, samples, max_v, min_v, trun_high, trun_low, bit_depth)
+    trun_quant_pipeline(org_feat_path, org_sample_name, root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth)
 
     # Remember to set different truncation regions for vtm and hyperprior!
     bit_depth = 1
     encoder = 'hyperprior'
-    org_feat_path = f'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/feature_test'; print('org_feat_path: ', org_feat_path)
+    org_feat_path = f'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/feature_test_all'; print('org_feat_path: ', org_feat_path)
     root_path = f'/home/gaocs/projects/FCM-LM/Data/{model_type}/{task}/{encoder}'; print('root_path: ', root_path)
     print(model_type, task, trun_flag, quant_type, samples, max_v, min_v, trun_high, trun_low, bit_depth)
-    trun_scale_pipeline(org_feat_path, root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth)
+    trun_scale_pipeline(org_feat_path, org_sample_name, root_path, model_type, trun_flag, samples, max_v, min_v, trun_high, trun_low, quant_type, bit_depth)

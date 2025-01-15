@@ -177,8 +177,8 @@ def vtm_baseline_evaluation():
     # Set up paths
     config_path = 'cfg/dinov2_vitg14_nyu_linear4_config.py'
     backbone_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_pretrain.pth'
-    head_checkpoint_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/pretrained_head/dinov2_vitg14_nyu_linear4_head.pth"
-    source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/source/NYU_Test16'
+    head_checkpoint_path = "/home/gaocs/models/dinov2/dinov2_vitg14_nyu_linear4_head.pth"
+    source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/source/NYU_Test'
     source_split_name = 'nyu_test.txt'  # put it at the same folder as the source_img_path
     org_feature_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/feature_test"
     vtm_root_path = f'/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/vtm_baseline'; print('vtm_root_path: ', vtm_root_path)
@@ -227,8 +227,8 @@ def hyperprior_baseline_evaluation():
     # Set up paths
     config_path = 'cfg/dinov2_vitg14_nyu_linear4_config.py'
     backbone_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_pretrain.pth'
-    head_checkpoint_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/pretrained_head/dinov2_vitg14_nyu_linear4_head.pth"
-    source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/source/NYU_Test16'
+    head_checkpoint_path = "/home/gaocs/models/dinov2/dinov2_vitg14_nyu_linear4_head.pth"
+    source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/source/NYU_Test'
     source_split_name = 'nyu_test.txt'  # put it at the same folder as the source_img_path
     org_feature_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/feature_test"
     root_path = f'/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/hyperprior'; print('root_path: ', root_path)
@@ -276,20 +276,20 @@ def hyperprior_baseline_evaluation():
         print(f"\nRMSE: {results[0][4]:.8f}")
         print(f"Feature MSE: {feat_mse:.8f}")
 
-# run below to evaluate the reconstructed features
-if __name__ == "__main__":
-    vtm_baseline_evaluation()
-    # hyperprior_baseline_evaluation()
+# # run below to evaluate the reconstructed features
+# if __name__ == "__main__":
+#     vtm_baseline_evaluation()
+#     # hyperprior_baseline_evaluation()
 
 # run below to extract original features as the dataset. 
 # You can skip feature extraction if you have download the test dataset from https://drive.google.com/drive/folders/1RZFGlBd6wZr4emuGO4_YJWfKPtAwcMXQ
-# if __name__ == "__main__":
-#     config_path = 'cfg/dinov2_vitg14_nyu_linear4_config.py'
-#     backbone_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_pretrain.pth'
-#     head_checkpoint_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/pretrained_head/dinov2_vitg14_nyu_linear4_head.pth"
-#     source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/source/NYU_Test16'
-#     source_split_name = 'nyu_test.txt'
-#     org_feature_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/feature_test"
-#     rec_feature_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/hyperprior/postprocessed/trunl[-1, -2, -10, -10]_trunh[1, 2, 10, 10]_uniform0_bitdepth1"
+if __name__ == "__main__":
+    config_path = 'cfg/dinov2_vitg14_nyu_linear4_config.py'
+    backbone_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_pretrain.pth'
+    head_checkpoint_path = "/home/gaocs/models/dinov2/dinov2_vitg14_nyu_linear4_head.pth"
+    source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/source/NYU_Test'
+    source_split_name = 'nyu_test_16.txt'
+    org_feature_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/feature_test"
+    rec_feature_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/dpt/feature_test"
     
-#     dpt_pipeline(config_path, backbone_checkpoint_path, head_checkpoint_path, source_img_path, source_split_name, org_feature_path, rec_feature_path)
+    dpt_pipeline(config_path, backbone_checkpoint_path, head_checkpoint_path, source_img_path, source_split_name, org_feature_path, rec_feature_path)

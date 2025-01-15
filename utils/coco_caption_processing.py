@@ -38,8 +38,8 @@ def write_to_file(processed_data, output_path):
     with open(output_path, 'w') as f:
         for file_name, caption in processed_data:
             if file_name and caption:  # Check for non-empty entries
-                # f.write(f"{file_name} {caption}\n")
-                f.write(f"{file_name[:-4]} ")
+                f.write(f"{file_name} {caption}\n")
+                # f.write(f"{file_name[:-4]}\n")
 
 # Step 4: Read the output file and return file names and captions
 def get_captions(source_captions_name):
@@ -62,11 +62,11 @@ def main(annotations_path, output_file, prefix, samples):
     # captions, image_names = get_captions(output_file)
 
 if __name__ == "__main__":
-    samples = 500
+    samples = 100
     prefix = 'COCO_val2017_'
     annotations_path = "/home/gaocs/projects/FCM-LM/Data/sd3/tti/source/captions_val2017.json"
     # output_file = f"/home/gaocs/projects/FCM-LM/Data/sd3/tti/source/captions_val2017_select{samples}.txt"
-    output_file = f"/home/gaocs/projects/FCM-LM/Data/sd3/tti/source/captions_val2017_select{samples}_vtm.txt"
+    output_file = f"/home/gaocs/projects/FCM-LM/Data/sd3/tti/source/captions_val2017_select{samples}_vtm2.txt"
     # output_file = f"/home/gaocs/projects/FCM-LM/Data/sd3/tti/source/captions_val2017_all.txt"
     main(annotations_path, output_file, prefix, samples)
 

@@ -40,6 +40,30 @@ def get_label_from_file(filename, file_path):
     
     return None  # Return None if the file name is not found
 
+def get_label_from_dataset(test_dataset):
+    err_list = [22, 30, 32, 36, 54, 59, 60, 67, 68, 120, 123, 134, 137, 138, 161, 170, 173, 184, 186, 193, 196, 204, 213, 231, 236, \
+                240, 241, 249, 257, 259, 265, 272, 281, 288, 292, 297, 304, 319, 343, 353, 356, 358, 369, 381, 385, 392, 397, 424, 435, \
+                444, 445, 460, 463, 470, 479, 480, 482, 484, 493, 501, 508, 519, 526, 527, 531, 534, 541, 544, 550, 561, 580, 582, 601, \
+                605, 608, 616, 619, 620, 630, 639, 650, 651, 664, 673, 675, 676, 691, 702, 724, 733, 742, 743, 747, 750, 754, 776, 778, \
+                782, 784, 787, 789, 790, 799, 814, 815, 826, 832, 834, 835, 836, 841, 848, 851, 857, 858, 876, 880, 885, 890, 892, 908, \
+                911, 925, 928, 947, 952, 961, 966, 967, 970, 972, 983, 987]
+    label_for_correct = []
+    total_class = 1000
+    required_class = 500
+    label_idx = 0
+    
+    image_names = [sample[0] for sample in test_dataset.samples]
+    for idx, image_name in enumerate(image_names):
+        img_split = image_name.split('/')
+        path_name, img_name = img_split[-2], img_split[-1][:-5]
+        if not idx in err_list:
+            # print(img_name, idx)    # for imagenet_selected_label500.txt
+            # print(path_name, img_name)  # for imagenet_selected_pathname500.txt
+            print(img_name) # for cpu cluster
+            label_for_correct.append(idx)
+        if len(label_for_correct)==required_class:
+            break
+    return label_for_correct
 
 def build_dataset(source_img_path: str, batch_size: int, transform: str ='test'):
     # Define data transformations
@@ -136,6 +160,8 @@ def cls_pipeline(backbone_checkpoint_path: str, head_checkpoint_path: str, sourc
 
     batch_size = 1
     test_dataset, test_dataloader = build_dataset(source_img_path, batch_size, 'test')
+    
+    labels = get_label_from_dataset(test_dataset)   # comment this, only used in the first time to generate source label file
 
     # Initialize the model
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -154,7 +180,7 @@ def cls_pipeline(backbone_checkpoint_path: str, head_checkpoint_path: str, sourc
 def vtm_baseline_evaluation():
     # Set up paths
     backbone_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_pretrain.pth'
-    head_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/pretrained_head/dinov2_vitg14_linear_head.pth'
+    head_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_cls_linear_head.pth'
     source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/source/ImageNet_Selected100'
     source_label_name = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/source/imagenet_selected_label100.txt'
     org_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/feature_test'
@@ -182,7 +208,7 @@ def vtm_baseline_evaluation():
 def hyperprior_baseline_evaluation():
     # Set up paths
     backbone_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_pretrain.pth'
-    head_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/pretrained_head/dinov2_vitg14_linear_head.pth'
+    head_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_cls_linear_head.pth'
     source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/source/ImageNet_Selected100'
     source_label_name = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/source/imagenet_selected_label100.txt'
     org_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/feature_test'
@@ -210,19 +236,19 @@ def hyperprior_baseline_evaluation():
         print(f"Classification Accuracy: {acc:.4f}")
         # print(f"Feature MSE: {feat_mse:.8f}")
 
-# run below to evaluate the reconstructed features
-if __name__ == "__main__":
-    # vtm_baseline_evaluation()
-    hyperprior_baseline_evaluation()
+# # run below to evaluate the reconstructed features
+# if __name__ == "__main__":
+#     # vtm_baseline_evaluation()
+#     hyperprior_baseline_evaluation()
 
 # run below to extract original features as the dataset. 
 # You can skip feature extraction if you have download the test dataset from https://drive.google.com/drive/folders/1RZFGlBd6wZr4emuGO4_YJWfKPtAwcMXQ
-# if __name__ == "__main__":
-#     backbone_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_pretrain.pth'
-#     head_checkpoint_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/pretrained_head/dinov2_vitg14_linear_head.pth'
-#     source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/source/ImageNet_Selected100'
-#     source_label_name = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/source/imagenet_selected_label100.txt'
-#     org_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/feature_test'
-#     rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/hyperprior/postprocessed/trunl-5_trunh5_uniform0_bitdepth1'
+if __name__ == "__main__":
+    backbone_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_pretrain.pth'
+    head_checkpoint_path = '/home/gaocs/models/dinov2/dinov2_vitg14_cls_linear_head.pth'
+    source_img_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/source/ImageNet_Selected100'
+    source_label_name = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/source/imagenet_selected_label100.txt'
+    org_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/feature_test'
+    rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/dinov2/cls/feature_test'
 
-#     cls_pipeline(backbone_checkpoint_path, head_checkpoint_path, source_img_path, source_label_name, org_feature_path, rec_feature_path)
+    cls_pipeline(backbone_checkpoint_path, head_checkpoint_path, source_img_path, source_label_name, org_feature_path, rec_feature_path)

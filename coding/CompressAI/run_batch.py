@@ -122,10 +122,10 @@ def hyperprior_train_evaluate_pipeline(data_root, model_type, task, max_v, min_v
     print('encoding time: ', time.time() - time_start)
 
 if __name__ == "__main__":
-    # model_type = 'llama3'; task = 'csr'
-    # max_v = 47.75; min_v = -78; trun_high = 5; trun_low = -5
-    # lambda_value_all = [0.01405, 0.0142, 0.015, 0.07, 10]
-    # epochs = 200; learning_rate = "1e-4"; batch_size = 40; patch_size = "64 4096" # height first, width later
+    model_type = 'llama3'; task = 'csr'
+    max_v = 47.75; min_v = -78; trun_high = 5; trun_low = -5
+    lambda_value_all = [0.01405, 0.0142, 0.015, 0.07, 10]
+    epochs = 200; learning_rate = "1e-4"; batch_size = 40; patch_size = "64 4096" # height first, width later
 
     # model_type = 'dinov2'; task = 'cls'
     # max_v = 104.1752; min_v = -552.451; trun_high = 5; trun_low = -5
@@ -142,15 +142,15 @@ if __name__ == "__main__":
     # lambda_value_all = [0.001, 0.005, 0.02, 0.05, 0.12]
     # epochs = 200; learning_rate = "1e-4"; batch_size = 128; patch_size = "256 256"   # height first, width later
     
-    model_type = 'sd3'; task = 'tti'
-    max_v = 4.668; min_v = -6.176; trun_high = 4.668; trun_low = -6.176
-    lambda_value_all = [0.005, 0.01, 0.02, 0.05, 0.2]
-    epochs = 60; learning_rate = "1e-4"; batch_size = 32; patch_size = "512 512"   # height first, width later
+    # model_type = 'sd3'; task = 'tti'
+    # max_v = 4.668; min_v = -6.176; trun_high = 4.668; trun_low = -6.176
+    # lambda_value_all = [0.005, 0.01, 0.02, 0.05, 0.2]
+    # epochs = 60; learning_rate = "1e-4"; batch_size = 32; patch_size = "512 512"   # height first, width later
 
-    trun_flag = False
+    trun_flag = True
     quant_type = 'uniform'; samples = 0; bit_depth = 1
     data_root = "/home/gaocs/projects/FCM-LM/Data"
 
-    # lambda_value_all = [0.12]
+    # lambda_value_all = [0.01, 0.02, 0.05, 0.2]
     for lambda_value in lambda_value_all:
         hyperprior_train_evaluate_pipeline(data_root, model_type, task, max_v, min_v, trun_flag, trun_low, trun_high, quant_type, samples, bit_depth, lambda_value, epochs, learning_rate, batch_size, patch_size)

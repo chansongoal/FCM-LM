@@ -4,6 +4,9 @@ This project is the official implementation of the paper titled **“[Feature Co
 
 **"Feature coding"** is a key branch of the field of **"Coding for Machines"**, focusing on scenarios where a neural network is divided into multiple parts and deployed across different devices. In such cases, the intermediate features are encoded and transmitted between devices. The primary goal of feature coding is to minimize the bitrate under a certain constraint of task accuracy or maxmize the task accuracy under a certain constraint of bitrate.
 
+We classify the source codes into two folders: *coding and machines*. 
+The *“coding”* folder includes codes related to feature coding and the *“machines”* folder includes codes related to the machines algorithms (feature extraction and task evaluation).
+
 # Key Features
 
 - ## Feature Test Dataset
@@ -59,8 +62,6 @@ This project is the official implementation of the paper titled **“[Feature Co
     Please note that the feature extraction depends on specific pytorch versions. To obtain identical features, please follow the environmental setups.
 
 # Usage Guidelines
-
-## Code Structure
 
 We classify the source codes into two folders: *coding and machines*. 
 The *“coding”* folder includes codes related to feature coding and the *“machines”* folder includes codes related to the machines algorithms (feature extraction and task evaluation).

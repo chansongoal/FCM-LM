@@ -161,21 +161,22 @@ def tti_evaluate_clip_score(sd3_pipeline, clip_score_fn, source_captions, image_
     clip_score = round(float(clip_score), 4)
     print(f"CLIP Score: {clip_score:.4f}")
     # print(f"Feature MSE: {np.mean(mse_list):.8f}")
-    print(f"Evaluation time: {(time.time()-start_time):.2f}")
+    print(f"CLIP Score evaluation time: {(time.time()-start_time):.2f}")
 
+# please refer to https://lightning.ai/docs/torchmetrics/stable/image/frechet_inception_distance.html for more details
 def tti_evaluate_fid(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, org_image_path, rec_image_path):
     start_time = time.time()
     # image_names = image_names[:10]
     rec_image_all = []
     for idx, caption in enumerate(source_captions): 
         rec_img_name = os.path.join(rec_image_path, image_names[idx][:-4]+'.png')
-        rec_image = np.asarray(Image.open(rec_img_name))
+        rec_image = np.asarray(Image.open(rec_img_name).resize((299,299)))  # resize to 299x299
         rec_image_all.append(rec_image)
     
     org_image_all = []
     for idx, caption in enumerate(source_captions): 
         org_img_name = os.path.join(org_image_path, image_names[idx][:-4]+'.png')
-        org_image = np.asarray(Image.open(org_img_name))
+        org_image = np.asarray(Image.open(org_img_name).resize((299,299)))  # resize to 299x299
         org_image_all.append(org_image)
         
     rec_image_all = np.asarray(rec_image_all)   # already in [0, 255], no need further conversion
@@ -184,12 +185,12 @@ def tti_evaluate_fid(sd3_pipeline, source_captions, image_names, org_feature_pat
     org_image_tensor = torch.tensor(org_image_all).permute(0,3,1,2)
 
     # Compute FID
-    fid = FrechetInceptionDistance()
+    fid = FrechetInceptionDistance(feature=2048, reset_real_features=True, normalize=False, input_img_size=(3, 299, 299))
     fid.update(org_image_tensor, real=True)
     fid.update(rec_image_tensor, real=False)
 
     print(f"FID: {float(fid.compute()):.4f}")
-    print(f"Evaluation time: {(time.time()-start_time):.2f}")
+    print(f"FID evaluation time: {(time.time()-start_time):.2f}")
 
 def tti_pipeline(source_captions_name, org_feature_path, org_image_path, rec_feature_path, rec_image_path, vae_checkpoint_path, sd3_checkpoint_path):
     # Obtain source captions
@@ -206,12 +207,12 @@ def tti_pipeline(source_captions_name, org_feature_path, org_image_path, rec_fea
 
     # Generate images and evaluate 
     os.makedirs(rec_image_path, exist_ok=True)
-    # feat_to_image(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
+    feat_to_image(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
     
     tti_evaluate_fid(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, org_image_path, rec_image_path)
 
-    # clip_score_fn = partial(clip_score, model_name_or_path=vae_checkpoint_path)
-    # tti_evaluate_clip_score(sd3_pipeline, clip_score_fn, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
+    clip_score_fn = partial(clip_score, model_name_or_path=vae_checkpoint_path)
+    tti_evaluate_clip_score(sd3_pipeline, clip_score_fn, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
     
 def vtm_baseline_evaluation():
     # Setup related path
@@ -220,7 +221,7 @@ def vtm_baseline_evaluation():
     sd3_checkpoint_path = "/home/gaocs/models/StableDiffusion/stable-diffusion-3-medium-diffusers"
 
     org_feature_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/feature_test_all'
-    org_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/image_test'
+    org_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/image_test'  # use the images generated from original features as the anchor
     vtm_root_path = f'/home/gaocs/projects/FCM-LM/Data/sd3/tti/vtm_baseline'; print('vtm_root_path: ', vtm_root_path)
 
     # Obtain source captions
@@ -238,7 +239,6 @@ def vtm_baseline_evaluation():
     
     if trun_flag == False: trun_high = max_v; trun_low = min_v
 
-    # QPs = [0]
     for QP in QPs:
         print(trun_flag, quant_type, samples, max_v, min_v, trun_high, trun_low, bit_depth, QP)
         rec_feature_path = f"{vtm_root_path}/postprocessed/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/QP{QP}"
@@ -260,8 +260,8 @@ def hyperprior_baseline_evaluation():
     vae_checkpoint_path = "/home/gaocs/projects/FCM-LM/Data/sd3/tti/pretrained_head/clip-vit-base-patch16"
     sd3_checkpoint_path = "/home/gaocs/models/StableDiffusion/stable-diffusion-3-medium-diffusers"
 
-    org_feature_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/feature_test_all'
-    org_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/image_test'
+    org_feature_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/feature_test'
+    org_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/image_test'  # use the images generated from original features as the anchor
     root_path = f'/home/gaocs/projects/FCM-LM/Data/sd3/tti/hyperprior'; print('root_path: ', root_path)
 
     # Obtain source captions
@@ -287,6 +287,10 @@ def hyperprior_baseline_evaluation():
         rec_image_path = f"{root_path}/decoded/trunl{trun_low}_trunh{trun_high}_{quant_type}{samples}_bitdepth{bit_depth}/" \
                          f"lambda{lambda_v}_epoch{epochs}_lr{learning_rate}_bs{batch_size}_patch{patch_size.replace(' ', '-')}_image"
 
+        # # for scaling only 
+        # rec_feature_path = "/home/gaocs/projects/FCM-LM/Data/sd3/tti/hyperprior/postprocessed/trunl-6.176_trunh4.668_uniform0_bitdepth1"
+        # rec_image_path = "/home/gaocs/projects/FCM-LM/Data/sd3/tti/hyperprior/postprocessed/trunl-6.176_trunh4.668_uniform0_bitdepth1_image"
+
         # Generate images 
         os.makedirs(rec_image_path, exist_ok=True)
         feat_to_image(sd3_pipeline, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
@@ -297,22 +301,26 @@ def hyperprior_baseline_evaluation():
         clip_score_fn = partial(clip_score, model_name_or_path=vae_checkpoint_path)
         tti_evaluate_clip_score(sd3_pipeline, clip_score_fn, source_captions, image_names, org_feature_path, rec_feature_path, rec_image_path)
 
-if __name__ == "__main__":
-    vtm_baseline_evaluation()
-    # hyperprior_baseline_evaluation()
+# if __name__ == "__main__":
+#     # vtm_baseline_evaluation()
+#     hyperprior_baseline_evaluation()
 
 
 # run below to extract original features as the dataset. 
 # You can skip feature extraction if you have download the test dataset from https://drive.google.com/drive/folders/1RZFGlBd6wZr4emuGO4_YJWfKPtAwcMXQ
-# if __name__ == "__main__":
-#     source_captions_name = "/home/gaocs/projects/FCM-LM/Data/sd3/tti/source/captions_val2017_select100.txt"
-#     org_feature_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/feature_test'
-#     org_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/image_test'
-#     rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/hyperprior/postprocessed/trunl-6.176_trunh4.668_uniform0_bitdepth1'
-#     rec_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/hyperprior/postprocessed/trunl-6.176_trunh4.668_uniform0_bitdepth1_image'
-#     vae_checkpoint_path = "/home/gaocs/projects/FCM-LM/Data/sd3/tti/pretrained_head/clip-vit-base-patch16"
-#     sd3_checkpoint_path = "/home/gaocs/models/StableDiffusion/stable-diffusion-3-medium-diffusers"
+if __name__ == "__main__":
+    source_captions_name = "/home/gaocs/projects/FCM-LM/Data/sd3/tti/source/captions_val2017_select100.txt"
+    org_feature_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/feature_test'
+    org_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/image_test'  # use the images generated from original features as the anchor
+    rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/feature_test'
+    rec_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/image_test'
+    # rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/vtm_baseline/postprocessed/trunl-6.176_trunh4.668_uniform0_bitdepth10/QP0'
+    # rec_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/vtm_baseline/postprocessed/trunl-6.176_trunh4.668_uniform0_bitdepth10/QP0_image'
+    # rec_feature_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/hyperprior/postprocessed/trunl-6.176_trunh4.668_uniform0_bitdepth1'
+    # rec_image_path = '/home/gaocs/projects/FCM-LM/Data/sd3/tti/hyperprior/postprocessed/trunl-6.176_trunh4.668_uniform0_bitdepth1_image'
+    vae_checkpoint_path = "/home/gaocs/projects/FCM-LM/Data/sd3/tti/pretrained_head/clip-vit-base-patch16"
+    sd3_checkpoint_path = "/home/gaocs/models/StableDiffusion/stable-diffusion-3-medium-diffusers"
 
-#     tti_pipeline(source_captions_name, org_feature_path, org_image_path, rec_feature_path, rec_image_path, vae_checkpoint_path, sd3_checkpoint_path)
+    tti_pipeline(source_captions_name, org_feature_path, org_image_path, rec_feature_path, rec_image_path, vae_checkpoint_path, sd3_checkpoint_path)
 
 

@@ -19,8 +19,8 @@ def copy_folders_based_on_file(file_path, source_dir, destination_dir):
             line = line.strip()
             if not line:
                 continue
-            folder_name, file_name = line.split(',')  # Split folder and file name
-            folder_name = folder_name[2:-1]; file_name = file_name[2:-2]
+            folder_name, file_name = line.split()  # Split folder and file name
+            # folder_name = folder_name[2:-1]; file_name = file_name[2:-2]
             print(folder_name, file_name)
             
             source_folder_path = os.path.join(source_dir, folder_name)
@@ -30,8 +30,10 @@ def copy_folders_based_on_file(file_path, source_dir, destination_dir):
             if os.path.exists(source_folder_path):
                 os.makedirs(destination_folder_path, exist_ok=True)  # Create destination folder
                 
-                source_file_path = os.path.join(source_folder_path, file_name)
-                destination_file_path = os.path.join(destination_folder_path, file_name)
+                source_file_path = os.path.join(source_folder_path, file_name+'.JPEG')
+                destination_file_path = os.path.join(destination_folder_path, file_name+'.JPEG')
+                print(source_file_path)
+                print(destination_file_path)
                 
                 # Copy the specific file if it exists
                 if os.path.exists(source_file_path):
@@ -44,7 +46,7 @@ def copy_folders_based_on_file(file_path, source_dir, destination_dir):
 
 # Main function to run the script
 if __name__ == "__main__":
-    text_file_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/cls/source/imagenet_selected100.txt"  # Replace with the actual path to the text file
+    text_file_path = "/home/gaocs/projects/FCM-LM/Data/dinov2/cls/source/imagenet_selected_pathname100.txt"  # Replace with the actual path to the text file
     source_directory = "/home/gaocs/projects/FCM-LM/Data/dinov2/cls/source/ImageNet_Val1000"  # Replace with the actual path to the source directory
     destination_directory = "/home/gaocs/projects/FCM-LM/Data/dinov2/cls/source/ImageNet_Selected100"  # Replace with the desired destination directory
     
